@@ -22,7 +22,8 @@ defmodule Trike.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ranch, "~> 2.0"}
+      {:ranch, "~> 2.0"},
+      {:jason, "~> 1.2"}
     ]
   end
 end
