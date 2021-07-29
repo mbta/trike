@@ -4,17 +4,21 @@ defmodule Trike.Application do
   @moduledoc false
 
   use Application
+  require Logger
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Starts a worker by calling: Trike.Worker.start_link(arg)
-      # {Trike.Worker, arg}
-    ]
+    {listen_port, _rest} = Application.get_env(:trike, :listen_port) |> Integer.parse()
+    kinesis_stream = Application.get_env(:trike, :kinesis_stream)
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Trike.Supervisor]
-    Supervisor.start_link(children, opts)
+    Logger.info("Starting Trike on port #{listen_port} proxying to #{kinesis_stream}")
+
+    :ranch.start_listener(
+      make_ref(),
+      :ranch_tcp,
+      [{:port, listen_port}],
+      Trike.Proxy,
+      stream: kinesis_stream
+    )
   end
 end
