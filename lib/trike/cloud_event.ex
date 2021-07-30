@@ -12,6 +12,7 @@ defmodule Trike.CloudEvent do
           }
         }
 
+  @derive Jason.Encoder
   defstruct [
     :source,
     :id,
@@ -25,7 +26,7 @@ defmodule Trike.CloudEvent do
   @spec parse(binary(), DateTime.t(), String.t()) :: t()
   def parse(message, current_time, partition_key) do
     time = message_time(message, current_time)
-    id = :crypto.hash(:blake2b, [DateTime.to_iso8601(time), message])
+    id = :crypto.hash(:blake2b, [DateTime.to_iso8601(time), message]) |> Base.encode64()
 
     %__MODULE__{
       source: event_source(),
@@ -60,5 +61,13 @@ defmodule Trike.CloudEvent do
     {:ok, app} = :application.get_application(__MODULE__)
 
     URI.merge("ocs://opstech3.mbta.com", to_string(app))
+  end
+
+  defimpl Jason.Encoder, for: URI do
+    def encode(uri, opts) do
+      uri
+      |> URI.to_string()
+      |> Jason.Encode.string(opts)
+    end
   end
 end

@@ -32,7 +32,7 @@ defmodule Trike.Proxy do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
     socket_formatted = Util.format_socket(socket)
-    partition_key = :crypto.hash(:blake2b, socket_formatted)
+    partition_key = :crypto.hash(:blake2b, socket_formatted) |> Base.encode64()
 
     Logger.info("Accepted socket: #{socket_formatted}")
 
