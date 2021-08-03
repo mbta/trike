@@ -24,7 +24,9 @@ defmodule Trike.MixProject do
     [
       {:ranch, "~> 2.0"},
       {:jason, "~> 1.2"},
-      {:tzdata, "~> 1.1"}
+      {:tzdata, "~> 1.1"},
+      {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
     ]
   end
 end
