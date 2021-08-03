@@ -51,13 +51,11 @@ defmodule Trike.CloudEvent do
 
     eastern_time = DateTime.shift_zone!(current_time, "America/New_York")
 
-    %{
-      eastern_time
-      | hour: String.to_integer(hour),
-        minute: String.to_integer(minute),
-        second: String.to_integer(second),
-        microsecond: {0, 0}
-    }
+    DateTime.new!(
+      DateTime.to_date(eastern_time),
+      Time.new!(hour, minute, second),
+      "America/New_York"
+    )
   end
 
   @spec event_source() :: URI.t()
