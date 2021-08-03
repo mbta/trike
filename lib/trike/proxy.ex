@@ -11,7 +11,7 @@ defmodule Trike.Proxy do
   @behaviour :ranch_protocol
 
   @type t() :: %__MODULE__{
-          socket: :ranch_transport.socket(),
+          socket: :gen_tcp.socket(),
           stream: String.t(),
           partition_key: String.t(),
           buffer: binary()
