@@ -27,8 +27,8 @@ defmodule Trike.CloudEvent do
     data: %{received_time: nil, raw: nil}
   ]
 
-  @spec parse(binary(), DateTime.t(), String.t()) :: t()
-  def parse(message, current_time, partition_key) do
+  @spec from_ocs_message(binary(), DateTime.t(), String.t()) :: t()
+  def from_ocs_message(message, current_time, partition_key) do
     time = message_time(message, current_time)
     id = :crypto.hash(:blake2b, [DateTime.to_iso8601(time), message]) |> Base.encode64()
 

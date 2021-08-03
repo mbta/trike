@@ -50,7 +50,7 @@ defmodule Trike.Proxy do
       ) do
     {messages, rest} = extract(buffer <> data)
     current_time = DateTime.utc_now()
-    events = Enum.map(messages, &CloudEvent.parse(&1, current_time, partition_key))
+    events = Enum.map(messages, &CloudEvent.from_ocs_message(&1, current_time, partition_key))
     Enum.each(events, &Logger.info(Jason.encode!(&1, pretty: true)))
 
     {:noreply, %{state | buffer: rest}}
