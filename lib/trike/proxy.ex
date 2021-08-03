@@ -7,7 +7,6 @@ defmodule Trike.Proxy do
   use GenServer
   require Logger
   alias Trike.CloudEvent
-  alias Trike.Util
 
   @behaviour :ranch_protocol
 
@@ -36,7 +35,7 @@ defmodule Trike.Proxy do
   def handle_continue({ref, transport, stream}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
-    socket_formatted = Util.format_socket(socket)
+    socket_formatted = format_socket(socket)
     partition_key = :crypto.hash(:blake2b, socket_formatted) |> Base.encode64()
 
     Logger.info("Accepted socket: #{socket_formatted}")
@@ -71,5 +70,15 @@ defmodule Trike.Proxy do
     statements = String.split(buffer, @eot)
     {messages, [rest]} = Enum.split(statements, -1)
     {messages, rest}
+  end
+
+  @spec format_socket(:gen_tcp.socket()) :: String.t()
+  defp format_socket(sock) do
+    with {:ok, {local_ip, local_port}} <- :inet.sockname(sock),
+         {:ok, {peer_ip, peer_port}} <- :inet.peername(sock) do
+      "{#{:inet.ntoa(local_ip)}:#{local_port} -> #{:inet.ntoa(peer_ip)}:#{peer_port}}"
+    else
+      unexpected -> inspect(unexpected)
+    end
   end
 end
