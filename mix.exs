@@ -25,6 +25,8 @@ defmodule Trike.MixProject do
       {:ranch, "~> 2.0"},
       {:jason, "~> 1.2"},
       {:tzdata, "~> 1.1"},
+      {:ex_aws, "~> 2.2"},
+      {:ex_aws_kinesis, "~> 2.0"},
       {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
     ]
