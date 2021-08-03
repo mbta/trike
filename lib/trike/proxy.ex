@@ -1,4 +1,9 @@
 defmodule Trike.Proxy do
+  @moduledoc """
+  A Ranch protocol that receives TCP packets, extracts OCS messages from them,
+  generates a CloudEvent for each message, and forwards the event to Amazon
+  Kinesis.
+  """
   use GenServer
   require Logger
   alias Trike.CloudEvent

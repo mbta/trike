@@ -1,4 +1,8 @@
 defmodule Trike.CloudEvent do
+  @moduledoc """
+  Represents a standard CloudEvent as well as a function for creating new
+  CloudEvents from OCS messages.
+  """
   @type t() :: %__MODULE__{
           specversion: String.t(),
           type: String.t(),
