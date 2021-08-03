@@ -47,7 +47,7 @@ defmodule Trike.CloudEvent do
   @spec message_time(binary(), DateTime.t()) :: DateTime.t()
   defp message_time(message, current_time) do
     [_count, _type, time, _rest] = String.split(message, ",", parts: 4)
-    [hour, minute, second] = String.split(time, ":")
+    [hour, minute, second] = String.split(time, ":") |> Enum.map(&String.to_integer/1)
 
     eastern_time = DateTime.shift_zone!(current_time, "America/New_York")
 
@@ -59,10 +59,10 @@ defmodule Trike.CloudEvent do
   end
 
   @spec event_source() :: URI.t()
-  defp event_source() do
-    {:ok, app} = :application.get_application(__MODULE__)
+  defp event_source do
+    {:ok, app} = :application.get_application()
 
-    URI.merge("ocs://opstech3.mbta.com", to_string(app))
+    URI.merge("ocs://opstech3.mbta.com", Atom.to_string(app))
   end
 
   defimpl Jason.Encoder, for: URI do
