@@ -35,10 +35,10 @@ defmodule Trike.Proxy do
   def handle_continue({ref, transport, stream}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
-    socket_formatted = format_socket(socket)
-    partition_key = :crypto.hash(:blake2b, socket_formatted) |> Base.encode64()
+    connection_string = format_socket(socket)
+    partition_key = :crypto.hash(:blake2b, connection_string) |> Base.encode64()
 
-    Logger.info("Accepted socket: #{socket_formatted}")
+    Logger.info("Accepted socket: #{connection_string}")
 
     {:noreply, %{state | socket: socket, stream: stream, partition_key: partition_key}}
   end
