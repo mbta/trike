@@ -27,6 +27,7 @@ defmodule Trike.MixProject do
       {:tzdata, "~> 1.1"},
       {:ex_aws, "~> 2.2"},
       {:ex_aws_kinesis, "~> 2.0"},
+      {:hackney, "~> 1.17"},
       {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
     ]
