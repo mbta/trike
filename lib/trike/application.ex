@@ -8,7 +8,7 @@ defmodule Trike.Application do
 
   @impl true
   def start(_type, _args) do
-    {listen_port, _rest} = Application.get_env(:trike, :listen_port) |> Integer.parse()
+    listen_port = Application.get_env(:trike, :listen_port)
     kinesis_stream = Application.get_env(:trike, :kinesis_stream)
 
     Logger.info("Starting Trike on port #{listen_port} proxying to #{kinesis_stream}")
