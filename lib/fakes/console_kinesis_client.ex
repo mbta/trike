@@ -1,6 +1,6 @@
-defmodule Fakes.FakeKinesisClient do
+defmodule Fakes.ConsoleKinesisClient do
   @moduledoc """
-  A fake Kinesis client that logs records to the console.
+  A Kinesis client that logs records to the console.
   """
   require Logger
 
