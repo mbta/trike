@@ -60,7 +60,7 @@ defmodule Trike.CloudEvent do
 
   @spec event_source() :: URI.t()
   defp event_source do
-    {:ok, app} = :application.get_application()
+    {:ok, app} = :application.get_application(__MODULE__)
 
     URI.merge("ocs://opstech3.mbta.com", Atom.to_string(app))
   end
