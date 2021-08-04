@@ -14,25 +14,26 @@ defmodule Trike.Proxy do
           socket: :gen_tcp.socket(),
           stream: String.t(),
           partition_key: String.t(),
-          buffer: binary()
+          buffer: binary(),
+          kinesis_client: module()
         }
 
-  defstruct [:socket, :stream, :partition_key, buffer: ""]
+  defstruct [:socket, :stream, :partition_key, :kinesis_client, buffer: ""]
 
   @eot <<4>>
 
   @impl :ranch_protocol
   def start_link(ref, transport, opts) do
-    GenServer.start_link(__MODULE__, {ref, transport, opts[:stream]})
+    GenServer.start_link(__MODULE__, {ref, transport, opts[:stream], opts[:kinesis_client]})
   end
 
   @impl GenServer
-  def init({ref, transport, stream}) do
-    {:ok, %__MODULE__{}, {:continue, {ref, transport, stream}}}
+  def init({ref, transport, stream, client}) do
+    {:ok, %__MODULE__{}, {:continue, {ref, transport, stream, client}}}
   end
 
   @impl GenServer
-  def handle_continue({ref, transport, stream}, state) do
+  def handle_continue({ref, transport, stream, client}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
@@ -40,18 +41,35 @@ defmodule Trike.Proxy do
 
     Logger.info("Accepted socket: #{connection_string}")
 
-    {:noreply, %{state | socket: socket, stream: stream, partition_key: partition_key}}
+    {:noreply,
+     %{
+       state
+       | socket: socket,
+         stream: stream,
+         partition_key: partition_key,
+         kinesis_client: client
+     }}
   end
 
   @impl GenServer
   def handle_info(
         {:tcp, socket, data},
-        %{socket: socket, buffer: buffer, partition_key: partition_key} = state
+        %{
+          socket: socket,
+          buffer: buffer,
+          partition_key: partition_key,
+          kinesis_client: kinesis_client,
+          stream: stream
+        } = state
       ) do
     {messages, rest} = extract(buffer <> data)
     current_time = DateTime.utc_now()
     events = Enum.map(messages, &CloudEvent.from_ocs_message(&1, current_time, partition_key))
-    Enum.each(events, &Logger.info(Jason.encode!(&1, pretty: true)))
+
+    Enum.each(
+      events,
+      &kinesis_client.put_record(stream, &1.partitionkey, Jason.encode!(&1))
+    )
 
     {:noreply, %{state | buffer: rest}}
   end

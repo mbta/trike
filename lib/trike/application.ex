@@ -18,7 +18,8 @@ defmodule Trike.Application do
       :ranch_tcp,
       [{:port, listen_port}],
       Trike.Proxy,
-      stream: kinesis_stream
+      stream: kinesis_stream,
+      kinesis_client: Application.get_env(:trike, :kinesis_client)
     )
   end
 end
