@@ -15,5 +15,5 @@ end
 if config_env() == :dev do
   config :trike,
     kinesis_stream: "console",
-    kinesis_client: Fakes.ConsoleKinesisClient
+    kinesis_client: Fakes.FakeKinesisClient
 end

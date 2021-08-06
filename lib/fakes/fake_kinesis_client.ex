@@ -1,4 +1,4 @@
-defmodule Fakes.ConsoleKinesisClient do
+defmodule Fakes.FakeKinesisClient do
   @moduledoc """
   A Kinesis client that logs records to the console.
   """
