@@ -27,6 +27,10 @@ defmodule Trike.CloudEvent do
     data: %{received_time: nil, raw: nil}
   ]
 
+  @doc """
+  Creates a CloudEvent struct given a full OCS message, the current time, and a
+  partition key.
+  """
   @spec from_ocs_message(binary(), DateTime.t(), String.t()) :: t()
   def from_ocs_message(message, current_time, partition_key) do
     time = message_time(message, current_time)
