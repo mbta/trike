@@ -19,7 +19,8 @@ defmodule Trike.Application do
       [{:port, listen_port}],
       Trike.Proxy,
       stream: kinesis_stream,
-      kinesis_client: Application.get_env(:trike, :kinesis_client)
+      kinesis_client: Application.get_env(:trike, :kinesis_client),
+      clock: Application.get_env(:trike, :clock)
     )
   end
 end

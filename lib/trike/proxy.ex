@@ -15,25 +15,32 @@ defmodule Trike.Proxy do
           stream: String.t(),
           partition_key: String.t(),
           buffer: binary(),
-          kinesis_client: module()
+          kinesis_client: module(),
+          clock: module()
         }
 
-  defstruct [:socket, :stream, :partition_key, :kinesis_client, buffer: ""]
+  defstruct [:socket, :stream, :partition_key, :kinesis_client, :clock, buffer: ""]
 
   @eot <<4>>
 
   @impl :ranch_protocol
   def start_link(ref, transport, opts) do
-    GenServer.start_link(__MODULE__, {ref, transport, opts[:stream], opts[:kinesis_client]})
+    GenServer.start_link(__MODULE__, {
+      ref,
+      transport,
+      opts[:stream],
+      opts[:kinesis_client],
+      opts[:clock]
+    })
   end
 
   @impl GenServer
-  def init({ref, transport, stream, client}) do
-    {:ok, %__MODULE__{}, {:continue, {ref, transport, stream, client}}}
+  def init({ref, transport, stream, client, clock}) do
+    {:ok, %__MODULE__{}, {:continue, {ref, transport, stream, client, clock}}}
   end
 
   @impl GenServer
-  def handle_continue({ref, transport, stream, client}, state) do
+  def handle_continue({ref, transport, stream, client, clock}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
@@ -47,7 +54,8 @@ defmodule Trike.Proxy do
        | socket: socket,
          stream: stream,
          partition_key: partition_key,
-         kinesis_client: client
+         kinesis_client: client,
+         clock: clock
      }}
   end
 
@@ -58,12 +66,13 @@ defmodule Trike.Proxy do
           socket: socket,
           buffer: buffer,
           partition_key: partition_key,
+          clock: clock,
           kinesis_client: kinesis_client,
           stream: stream
         } = state
       ) do
     {messages, rest} = extract(buffer <> data)
-    current_time = DateTime.utc_now()
+    current_time = clock.utc_now()
     events = Enum.map(messages, &CloudEvent.from_ocs_message(&1, current_time, partition_key))
 
     Enum.each(
