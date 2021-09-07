@@ -7,7 +7,8 @@ defmodule Trike.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      test_coverage: [tool: LcovEx, output: "cover"]
     ]
   end
 
@@ -29,6 +30,7 @@ defmodule Trike.MixProject do
       {:ex_aws_kinesis, "~> 2.0"},
       {:hackney, "~> 1.17"},
       {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
+      {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
     ]
   end
