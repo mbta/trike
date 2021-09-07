@@ -14,7 +14,6 @@ defmodule ProxyTest do
         :timer.sleep(500)
       end)
 
-      :gen_tcp.close(socket)
-
+    :gen_tcp.close(socket)
   end
 end
