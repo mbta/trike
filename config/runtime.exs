@@ -19,4 +19,14 @@ if config_env() == :prod do
     listen_port: System.get_env("LISTEN_PORT") |> String.to_integer(),
     kinesis_stream: System.get_env("KINESIS_STREAM"),
     kinesis_client: ExAws.Kinesis
+
+  config :logger, backends: [Logger.Backend.Splunk, :console]
+
+  config :logger, Logger.Backend.Splunk,
+    host: "https://http-inputs-mbta.splunkcloud.com/services/collector/event",
+    token: System.get_env("TRIKE_SPLUNK_TOKEN"),
+    format: "$dateT$time $metadata[$level] node=$node $message\n",
+    level: :info
+
+  config :logger, :console, level: :warn
 end
