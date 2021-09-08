@@ -34,7 +34,7 @@ defmodule Trike.CloudEvent do
     id = :crypto.hash(:blake2b, [DateTime.to_iso8601(time), message]) |> Base.encode64()
 
     %__MODULE__{
-      source: event_source(),
+      source: "opstech3.mbta.com/trike",
       time: time,
       id: id,
       partitionkey: partition_key,
@@ -57,20 +57,5 @@ defmodule Trike.CloudEvent do
       Time.new!(hour, minute, second),
       "America/New_York"
     )
-  end
-
-  @spec event_source() :: URI.t()
-  defp event_source do
-    {:ok, app} = :application.get_application(Trike.Application)
-
-    URI.merge("ocs://opstech3.mbta.com", Atom.to_string(app))
-  end
-
-  defimpl Jason.Encoder, for: URI do
-    def encode(uri, opts) do
-      uri
-      |> URI.to_string()
-      |> Jason.Encode.string(opts)
-    end
   end
 end
