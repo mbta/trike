@@ -3,6 +3,9 @@ defmodule Trike.CloudEvent do
   Represents a standard CloudEvent as well as a function for creating new
   CloudEvents from OCS messages.
   """
+
+  alias Trike.OcsRawMessage
+
   @type t() :: %__MODULE__{
           specversion: String.t(),
           type: String.t(),
@@ -10,22 +13,16 @@ defmodule Trike.CloudEvent do
           id: String.t(),
           partitionkey: String.t(),
           time: DateTime.t(),
-          data: %{
-            received_time: DateTime.t(),
-            raw: binary()
-          }
+          data: OcsRawMessage.t()
         }
 
   @derive Jason.Encoder
-  defstruct [
-    :source,
-    :id,
-    :partitionkey,
-    :time,
-    specversion: "1.0",
-    type: "com.mbta.ocs.raw_message",
-    data: %{received_time: nil, raw: nil}
-  ]
+  @enforce_keys [:source, :id, :partitionkey, :time, :data]
+  defstruct @enforce_keys ++
+              [
+                specversion: "1.0",
+                type: "com.mbta.ocs.raw_message"
+              ]
 
   @doc """
   Creates a CloudEvent struct given a full OCS message, the current time, and a
@@ -41,7 +38,7 @@ defmodule Trike.CloudEvent do
       time: time,
       id: id,
       partitionkey: partition_key,
-      data: %{
+      data: %OcsRawMessage{
         received_time: current_time,
         raw: message
       }
