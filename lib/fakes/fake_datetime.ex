@@ -4,7 +4,5 @@ defmodule Fakes.FakeDateTime do
   """
 
   @spec utc_now :: DateTime.t()
-  def utc_now do
-    DateTime.new!(Date.new!(2021, 8, 13), Time.new!(12, 0, 0), "Etc/UTC")
-  end
+  def utc_now, do: ~U[2021-08-13 12:00:00Z]
 end
