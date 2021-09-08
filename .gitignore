@@ -25,3 +25,6 @@ trike-*.tar
 
 # Temporary files for e.g. tests
 /tmp
+
+# WinSW log folder
+/log/
