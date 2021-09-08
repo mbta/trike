@@ -50,7 +50,6 @@ defmodule Trike.Proxy do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
-    partition_key = :crypto.hash(:blake2b, connection_string) |> Base.encode64()
 
     Logger.info("Accepted socket: #{connection_string}")
 
@@ -58,7 +57,7 @@ defmodule Trike.Proxy do
      %{
        state
        | socket: socket,
-         partition_key: partition_key,
+         partition_key: connection_string
      }}
   end
 
