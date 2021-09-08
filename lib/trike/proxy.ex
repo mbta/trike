@@ -11,15 +11,16 @@ defmodule Trike.Proxy do
   @behaviour :ranch_protocol
 
   @type t() :: %__MODULE__{
-          socket: :gen_tcp.socket(),
+          socket: :gen_tcp.socket() | nil,
           stream: String.t(),
-          partition_key: String.t(),
+          partition_key: String.t() | nil,
           buffer: binary(),
           kinesis_client: module(),
           clock: module()
         }
 
-  defstruct [:socket, :stream, :partition_key, :kinesis_client, :clock, buffer: ""]
+  @enforce_keys [:stream, :kinesis_client, :clock]
+  defstruct @enforce_keys ++ [:socket, :partition_key, buffer: ""]
 
   @eot <<4>>
 
@@ -36,11 +37,16 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def init({ref, transport, stream, client, clock}) do
-    {:ok, %__MODULE__{}, {:continue, {ref, transport, stream, client, clock}}}
+    {:ok,
+     %__MODULE__{
+       stream: stream,
+       kinesis_client: client,
+       clock: clock
+     }, {:continue, {ref, transport}}}
   end
 
   @impl GenServer
-  def handle_continue({ref, transport, stream, client, clock}, state) do
+  def handle_continue({ref, transport}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
@@ -52,10 +58,7 @@ defmodule Trike.Proxy do
      %{
        state
        | socket: socket,
-         stream: stream,
          partition_key: partition_key,
-         kinesis_client: client,
-         clock: clock
      }}
   end
 
