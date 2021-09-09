@@ -9,7 +9,7 @@ defmodule Trike.CloudEvent do
   @type t() :: %__MODULE__{
           specversion: String.t(),
           type: String.t(),
-          source: URI.t(),
+          source: String.t(),
           id: String.t(),
           partitionkey: String.t(),
           time: DateTime.t(),
