@@ -15,14 +15,16 @@ defmodule Trike.Proxy do
           stream: String.t(),
           partition_key: String.t() | nil,
           buffer: binary(),
+          received: integer(),
           kinesis_client: module(),
           clock: module()
         }
 
   @enforce_keys [:stream, :kinesis_client, :clock]
-  defstruct @enforce_keys ++ [:socket, :partition_key, buffer: ""]
+  defstruct @enforce_keys ++ [:socket, :partition_key, buffer: "", received: 0]
 
   @eot <<4>>
+  @staleness_check_interval_ms Application.compile_env(:trike, :staleness_check_interval_ms)
 
   @impl :ranch_protocol
   def start_link(ref, transport, opts) do
@@ -37,6 +39,8 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def init({ref, transport, stream, client, clock}) do
+    :timer.send_interval(@staleness_check_interval_ms, :staleness_check)
+
     {:ok,
      %__MODULE__{
        stream: stream,
@@ -82,11 +86,17 @@ defmodule Trike.Proxy do
       &kinesis_client.put_record(stream, &1.partitionkey, Jason.encode!(&1))
     )
 
-    {:noreply, %{state | buffer: rest}}
+    {:noreply, %{state | buffer: rest, received: state.received + 1}}
   end
 
   def handle_info({:tcp_closed, _socket}, state) do
     {:stop, :normal, state}
+  end
+
+  def handle_info(:staleness_check, %{received: received} = state) do
+    Logger.info(["Stale listener ", __MODULE__, " pid=", inspect(self()), " received=", received])
+
+    {:noreply, %{state | received: 0, buffer: ""}}
   end
 
   def handle_info(msg, state) do
