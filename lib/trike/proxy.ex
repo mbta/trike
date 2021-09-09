@@ -96,7 +96,7 @@ defmodule Trike.Proxy do
   def handle_info(:staleness_check, %{received: received} = state) do
     Logger.info(["Stale listener ", __MODULE__, " pid=", inspect(self()), " received=", received])
 
-    {:noreply, %{state | received: 0, buffer: ""}}
+    {:noreply, %{state | received: 0}}
   end
 
   def handle_info(msg, state) do
