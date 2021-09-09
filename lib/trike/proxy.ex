@@ -81,6 +81,8 @@ defmodule Trike.Proxy do
     current_time = clock.utc_now()
     events = Enum.map(messages, &CloudEvent.from_ocs_message(&1, current_time, partition_key))
 
+    Logger.info(data)
+
     Enum.each(
       events,
       &kinesis_client.put_record(stream, &1.partitionkey, Jason.encode!(&1))
