@@ -10,6 +10,9 @@ Trike is a simple application in the spirit of [socket_proxy](https://github.com
 - Run tests: `mix test`
 - Run typechecking: `mix dialyzer`
 - Run style checking: `mix credo --strict`
+- Run the application:
+  - When developing (`MIX_ENV=dev`), Trike will listen on port 8001 and proxy received messages into a fake Kinesis client that logs events to the console instead of sending them to AWS. The port can be changed with the environment variable `LISTEN_PORT`.
+  - Run `mix run --no-halt` or `LISTEN_PORT=<some other port> mix run --no-halt`
 
 # Deployment
 Trike runs as a Windows service on the opstech3 server in the MBTA's data center. You will need [remote desktop access to opstech3](https://github.com/mbta/wiki/blob/master/devops/accessing-windows-servers.md) to deploy it. If you are not connected to the MBTA's network, you will need to join it using [the VPN](https://www.mbta.com/org/workfromhome).
