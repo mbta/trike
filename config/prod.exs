@@ -11,3 +11,5 @@ config :logger, Logger.Backend.Splunk,
   level: :info
 
 config :logger, :console, level: :warn
+
+config :ehmon, :report_mf, {:ehmon, :info_report}
