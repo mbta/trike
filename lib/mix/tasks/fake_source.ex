@@ -2,7 +2,7 @@ defmodule Mix.Tasks.FakeSource do
   @moduledoc """
   A fake source of OCS messages that reads in canned messages from
   priv/ocs_data.csv and sends them to Trike on the specified port (8001 by
-  default).
+  default). Also sends bad data if you ask it to.
   """
   use Mix.Task
   require Logger
