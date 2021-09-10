@@ -3,7 +3,6 @@ defmodule Trike.CloudEvent do
   Represents a standard CloudEvent as well as a function for creating new
   CloudEvents from OCS messages.
   """
-
   alias Trike.OcsRawMessage
 
   @type t() :: %__MODULE__{

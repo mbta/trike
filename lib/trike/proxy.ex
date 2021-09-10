@@ -55,7 +55,7 @@ defmodule Trike.Proxy do
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
 
-    Logger.info("Accepted socket: #{connection_string}")
+    Logger.info(["Accepted socket: ", connection_string])
 
     {:noreply,
      %{
@@ -77,40 +77,44 @@ defmodule Trike.Proxy do
           stream: stream
         } = state
       ) do
-    Logger.info(["Received message ", data])
-
     {messages, rest} = extract(buffer <> data)
     current_time = clock.utc_now()
 
     Enum.each(messages, fn msg ->
       with {:ok, event} <- CloudEvent.from_ocs_message(msg, current_time, partition_key),
            {:ok, event_json} <- Jason.encode(event) do
-        Logger.info(
-          "Sending event: stream=#{stream}, partitionkey=#{event.partitionkey}, event_json=#{event_json}"
-        )
+        Logger.info([
+          "Sending event stream=",
+          stream,
+          ", partitionkey=",
+          event.partitionkey,
+          ", event_json=",
+          event_json
+        ])
 
         kinesis_client.put_record(stream, event.partitionkey, event_json)
       else
         error ->
-          Logger.info("Failed to parse message, reason=#{inspect(error)}")
+          Logger.info(["Failed to parse message: ", inspect(error)])
       end
     end)
 
     {:noreply, %{state | buffer: rest, received: state.received + 1}}
   end
 
-  def handle_info({:tcp_closed, _socket}, state) do
+  def handle_info({:tcp_closed, socket}, state) do
+    Logger.info(["Socket closed: ", inspect(socket)])
     {:stop, :normal, state}
   end
 
   def handle_info(:staleness_check, %{received: received} = state) do
-    Logger.info(["Stale listener ", __MODULE__, " pid=", inspect(self()), " received=", received])
+    Logger.info(["Stale Proxy pid=", inspect(self()), ", received=", received])
 
     {:noreply, %{state | received: 0}}
   end
 
   def handle_info(msg, state) do
-    Logger.info("#{__MODULE__} unknown message: #{inspect(msg)}")
+    Logger.info(["Proxy received unknown message: ", inspect(msg)])
     {:noreply, state}
   end
 

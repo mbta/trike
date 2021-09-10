@@ -11,7 +11,7 @@ defmodule Trike.Application do
     listen_port = Application.get_env(:trike, :listen_port)
     kinesis_stream = Application.get_env(:trike, :kinesis_stream)
 
-    Logger.info("Starting Trike on port #{listen_port} proxying to #{kinesis_stream}")
+    Logger.info(["Starting Trike on port ", inspect(listen_port), " proxying to ", kinesis_stream])
 
     :ranch.start_listener(
       make_ref(),
