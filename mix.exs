@@ -23,7 +23,7 @@ defmodule Trike.MixProject do
 
   defp aliases do
     [
-      check: ["format --check-formatted", "credo --strict", "dialyzer"]
+      check: ["format --check-formatted", "credo", "dialyzer"]
     ]
   end
 
