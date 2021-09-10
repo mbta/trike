@@ -17,9 +17,10 @@ defmodule Trike.CloudEvent do
         }
 
   @derive Jason.Encoder
-  @enforce_keys [:source, :id, :partitionkey, :time, :data]
+  @enforce_keys [:id, :partitionkey, :time, :data]
   defstruct @enforce_keys ++
               [
+                source: "opstech3.mbta.com/trike",
                 specversion: "1.0",
                 type: "com.mbta.ocs.raw_message"
               ]
