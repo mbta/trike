@@ -8,7 +8,8 @@ defmodule Trike.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      test_coverage: [tool: LcovEx, output: "cover"]
+      test_coverage: [tool: LcovEx, output: "cover"],
+      aliases: aliases()
     ]
   end
 
@@ -17,6 +18,12 @@ defmodule Trike.MixProject do
     [
       extra_applications: [:logger],
       mod: {Trike.Application, []}
+    ]
+  end
+
+  defp aliases do
+    [
+      check: ["format --check-formatted", "credo --strict", "dialyzer"]
     ]
   end
 

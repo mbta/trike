@@ -2,7 +2,7 @@
 
 Trike is a simple application in the spirit of [socket_proxy](https://github.com/mbta/socket_proxy) consisting of a [Ranch protocol](https://ninenines.eu/docs/en/ranch/2.1/guide/protocols/) that listens on a TCP socket for packets in the OCS (Operations Control System) message format, parses them into a structured [CloudEvent](https://cloudevents.io/), and forwards them to an [AWS Kinesis Data Stream](https://aws.amazon.com/kinesis/data-streams/).
 
-# Getting started
+# Development
 - Clone this repo.
 - Install [asdf](https://asdf-vm.com/guide/getting-started.html#_1-install-dependencies).
 - Run `asdf install` from the repository root.
@@ -10,6 +10,7 @@ Trike is a simple application in the spirit of [socket_proxy](https://github.com
 - Run tests: `mix test`
 - Run typechecking: `mix dialyzer`
 - Run style checking: `mix credo --strict`
+- Run all static checks: `mix check`
 - Run the application:
   - When developing (`MIX_ENV=dev`), Trike will listen on port 8001 and proxy received messages into a fake Kinesis client that logs events to the console instead of sending them to AWS. The port can be changed with the environment variable `LISTEN_PORT`.
   - Run `mix run --no-halt` or `LISTEN_PORT=<some other port> mix run --no-halt`
