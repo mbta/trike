@@ -83,15 +83,6 @@ defmodule Trike.Proxy do
     Enum.each(messages, fn msg ->
       with {:ok, event} <- CloudEvent.from_ocs_message(msg, current_time, partition_key),
            {:ok, event_json} <- Jason.encode(event) do
-        Logger.info([
-          "Sending event stream=",
-          stream,
-          ", partitionkey=",
-          event.partitionkey,
-          ", event_json=",
-          event_json
-        ])
-
         kinesis_client.put_record(stream, event.partitionkey, event_json)
       else
         error ->
