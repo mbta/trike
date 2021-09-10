@@ -15,9 +15,9 @@ defmodule Mix.Tasks.FakeSource do
   @impl true
   def run(args) do
     {opts, _, _} =
-      OptionParser.parse(args, strict: [port: :integer, bad: :boolean, good: :boolean])
+      OptionParser.parse(args, strict: [{:"trike-port", :integer}, bad: :boolean, good: :boolean])
 
-    port = opts[:port] || 8001
+    port = opts[:"trike-port"] || 8001
     bad = opts[:bad]
     good = opts[:good]
     host = {127, 0, 0, 1}
