@@ -12,8 +12,7 @@ defmodule CloudEventTest do
                   raw: "4994,TSCH,02:00:06,R,RLD,W",
                   received_time: ~U[2021-08-13 12:00:00Z]
                 },
-                id:
-                  "MKHkLK0QpFSsMkz8MeIw1UvgnAY2iGPTCLY+U1y4M8UVHNFTz+21I6TRrllJBAmyK3Jn3K8kwVxL3owWUFJX2g==",
+                id: "gVACBi3Es6Afha8Ik7SQP1lx3Jk=",
                 partitionkey: "1bQ0GxT4mk",
                 source: "opstech3.mbta.com/trike",
                 specversion: "1.0",
