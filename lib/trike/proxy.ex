@@ -82,29 +82,17 @@ defmodule Trike.Proxy do
     {messages, rest} = extract(buffer <> data)
     current_time = clock.utc_now()
 
-    messages
-    |> Stream.map(fn msg ->
-      case CloudEvent.from_ocs_message(msg, current_time, partition_key) do
-        {:ok, message} ->
-          message
+    Enum.each(messages, fn msg ->
+      with {:ok, event} <- CloudEvent.from_ocs_message(msg, current_time, partition_key),
+           {:ok, event_json} <- Jason.encode(event) do
+        Logger.info(
+          "Sending event: stream=#{stream}, partitionkey=#{event.partitionkey}, event_json=#{event_json}"
+        )
 
+        kinesis_client.put_record(stream, event.partitionkey, event_json)
+      else
         {:error, error} ->
           Logger.info("Failed to parse message, reason=#{error}")
-          nil
-      end
-    end)
-    |> Stream.reject(&is_nil/1)
-    |> Enum.each(fn event ->
-      case Jason.encode(event) do
-        {:ok, event_json} ->
-          Logger.info(
-            "Sending event: stream=#{stream}, partitionkey=#{event.partitionkey}, event_json=#{event_json}"
-          )
-
-          kinesis_client.put_record(stream, event.partitionkey, event_json)
-
-        {:error, error} ->
-          Logger.error("Failed to encode event, reason=#{error}")
       end
     end)
 
