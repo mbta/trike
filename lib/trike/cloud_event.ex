@@ -32,7 +32,7 @@ defmodule Trike.CloudEvent do
   def from_ocs_message(message, current_time, partition_key) do
     case message_time(message, current_time) do
       {:ok, time} ->
-        id = :crypto.hash(:blake2b, [DateTime.to_iso8601(time), message]) |> Base.encode64()
+        id = :crypto.hash(:sha, [DateTime.to_iso8601(time), message]) |> Base.encode64()
 
         {:ok,
          %__MODULE__{
