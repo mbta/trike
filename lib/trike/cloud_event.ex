@@ -48,13 +48,12 @@ defmodule Trike.CloudEvent do
   @spec message_time(binary(), DateTime.t()) :: DateTime.t()
   defp message_time(message, current_time) do
     [_count, _type, time, _rest] = String.split(message, ",", parts: 4)
-    [hour, minute, second] = String.split(time, ":") |> Enum.map(&String.to_integer/1)
 
     eastern_time = DateTime.shift_zone!(current_time, "America/New_York")
 
     DateTime.new!(
       DateTime.to_date(eastern_time),
-      Time.new!(hour, minute, second),
+      Time.from_iso8601!(time),
       "America/New_York"
     )
   end
