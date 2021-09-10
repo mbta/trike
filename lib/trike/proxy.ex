@@ -91,8 +91,8 @@ defmodule Trike.Proxy do
 
         kinesis_client.put_record(stream, event.partitionkey, event_json)
       else
-        {:error, error} ->
-          Logger.info("Failed to parse message, reason=#{error}")
+        error ->
+          Logger.info("Failed to parse message, reason=#{inspect(error)}")
       end
     end)
 
