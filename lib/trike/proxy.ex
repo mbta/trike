@@ -6,6 +6,7 @@ defmodule Trike.Proxy do
   """
   use GenServer
   require Logger
+  alias ExAws.Kinesis
   alias Trike.CloudEvent
 
   @behaviour :ranch_protocol
@@ -16,11 +17,12 @@ defmodule Trike.Proxy do
           partition_key: String.t() | nil,
           buffer: binary(),
           received: integer(),
-          kinesis_client: module(),
+          put_record_fn:
+            (Kinesis.stream_name(), binary(), binary() -> {:ok, term()} | {:error, term()}),
           clock: module()
         }
 
-  @enforce_keys [:stream, :kinesis_client, :clock]
+  @enforce_keys [:stream, :put_record_fn, :clock]
   defstruct @enforce_keys ++ [:socket, :partition_key, buffer: "", received: 0]
 
   @eot <<4>>
@@ -38,13 +40,13 @@ defmodule Trike.Proxy do
   end
 
   @impl GenServer
-  def init({ref, transport, stream, client, clock}) do
+  def init({ref, transport, stream, kinesis_client, clock}) do
     :timer.send_interval(@staleness_check_interval_ms, :staleness_check)
 
     {:ok,
      %__MODULE__{
        stream: stream,
-       kinesis_client: client,
+       put_record_fn: &kinesis_client.put_record/3,
        clock: clock
      }, {:continue, {ref, transport}}}
   end
@@ -67,13 +69,11 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def handle_info(
-        {:tcp, socket, data},
+        {:tcp, _socket, data},
         %{
-          socket: socket,
           buffer: buffer,
           partition_key: partition_key,
           clock: clock,
-          kinesis_client: kinesis_client,
           stream: stream
         } = state
       ) do
@@ -83,7 +83,7 @@ defmodule Trike.Proxy do
     Enum.each(messages, fn msg ->
       with {:ok, event} <- CloudEvent.from_ocs_message(msg, current_time, partition_key),
            {:ok, event_json} <- Jason.encode(event) do
-        kinesis_client.put_record(stream, event.partitionkey, event_json)
+        {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
       else
         error ->
           Logger.info(["Failed to parse message: ", inspect(error)])
