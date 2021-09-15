@@ -1,51 +1,57 @@
 defmodule ProxyTest do
   use ExUnit.Case
   import ExUnit.CaptureLog
+  alias Fakes.FakeDateTime
+  alias Trike.Proxy
 
   @eot <<4>>
 
   test "sends a properly formatted event to Kinesis" do
-    {:ok, socket} = :gen_tcp.connect(:localhost, 8001, [])
-    {:ok, port} = :inet.port(socket)
+    state = %{
+      buffer: "",
+      partition_key: "test_key",
+      clock: FakeDateTime,
+      stream: "test_stream",
+      put_record_fn: fn stream, key, data ->
+        send(self(), {:put_record, stream, key, data})
+        {:ok, :ok}
+      end,
+      received: 0
+    }
 
-    log =
-      capture_log(fn ->
-        :gen_tcp.send(socket, ["4994,TSCH,02:00:06,R,RLD,W", @eot])
-        :timer.sleep(200)
-      end)
+    data = "4994,TSCH,02:00:06,R,RLD,W#{@eot}"
 
-    assert log =~
-             """
-             console
-             {127.0.0.1:8001 -> 127.0.0.1:#{port}}
-             {"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W","received_time":"2021-08-13T12:00:00Z"},"id":"gVACBi3Es6Afha8Ik7SQP1lx3Jk=","partitionkey":"{127.0.0.1:8001 -> 127.0.0.1:#{port}}","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T02:00:06-04:00","type":"com.mbta.ocs.raw_message"}
-             """
+    Proxy.handle_info({:tcp, :socket, data}, state)
+
+    event =
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W","received_time":"2021-08-13T12:00:00Z"},"id":"gVACBi3Es6Afha8Ik7SQP1lx3Jk=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T02:00:06-04:00","type":"com.mbta.ocs.raw_message"})
+
+    assert_received({:put_record, "test_stream", "test_key", ^event})
   end
 
-  test "builds events from multiple packets" do
-    {:ok, socket} = :gen_tcp.connect(:localhost, 8001, [])
-    {:ok, port} = :inet.port(socket)
+  test "builds events with buffer" do
+    state = %{
+      buffer: "4994,TSCH,02:00:06",
+      partition_key: "test_key",
+      clock: FakeDateTime,
+      stream: "test_stream",
+      put_record_fn: fn stream, key, data ->
+        send(self(), {:put_record, stream, key, data})
+        {:ok, :ok}
+      end,
+      received: 0
+    }
 
-    log =
-      capture_log(fn ->
-        :gen_tcp.send(socket, "4994,TSCH,02:00:06")
-        :gen_tcp.send(socket, [",R,RLD,W", @eot, "4995,TSCH,02:00:06"])
-        :gen_tcp.send(socket, [",R,RLD,W", @eot])
-        :timer.sleep(200)
-      end)
+    data = ",R,RLD,W#{@eot}4995,TSCH,02:00:07"
+    rest = "4995,TSCH,02:00:07"
 
-    assert log =~
-             """
-             console
-             {127.0.0.1:8001 -> 127.0.0.1:#{port}}
-             {"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W","received_time":"2021-08-13T12:00:00Z"},"id":"gVACBi3Es6Afha8Ik7SQP1lx3Jk=","partitionkey":"{127.0.0.1:8001 -> 127.0.0.1:#{port}}","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T02:00:06-04:00","type":"com.mbta.ocs.raw_message"}
-             """
+    {:noreply, %{buffer: buffer}} = Proxy.handle_info({:tcp, :socket, data}, state)
 
-    assert log =~
-             """
-             console
-             {127.0.0.1:8001 -> 127.0.0.1:#{port}}
-             {"data":{"raw":"4995,TSCH,02:00:06,R,RLD,W","received_time":"2021-08-13T12:00:00Z"},"id":"6BR4CDlwuG2DGs9DmoNYZmSb1VE=","partitionkey":"{127.0.0.1:8001 -> 127.0.0.1:#{port}}","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T02:00:06-04:00","type":"com.mbta.ocs.raw_message"}
-             """
+    event =
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W","received_time":"2021-08-13T12:00:00Z"},"id":"gVACBi3Es6Afha8Ik7SQP1lx3Jk=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T02:00:06-04:00","type":"com.mbta.ocs.raw_message"})
+
+    assert_received({:put_record, "test_stream", "test_key", ^event})
+
+    assert buffer == rest
   end
 end
