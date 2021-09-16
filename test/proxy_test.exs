@@ -1,6 +1,5 @@
 defmodule ProxyTest do
   use ExUnit.Case
-  import ExUnit.CaptureLog
   alias Fakes.FakeDateTime
   alias Trike.Proxy
 
