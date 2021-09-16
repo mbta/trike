@@ -1,7 +1,7 @@
 import Config
 
 config :trike,
-  kinesis_client: ExAws.Kinesis
+  kinesis_client: Trike.KinesisClient
 
 config :logger, backends: [Logger.Backend.Splunk, :console]
 
