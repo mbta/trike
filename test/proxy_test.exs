@@ -1,5 +1,6 @@
 defmodule ProxyTest do
   use ExUnit.Case
+  import ExUnit.CaptureLog
   alias Fakes.FakeDateTime
   alias Trike.Proxy
 
@@ -52,5 +53,11 @@ defmodule ProxyTest do
     assert_received({:put_record, "test_stream", "test_key", ^event})
 
     assert buffer == rest
+  end
+
+  test "logs staleness check" do
+    staleness_check = capture_log(fn -> Proxy.handle_info(:staleness_check, %{received: 9}) end)
+
+    assert staleness_check =~ "Stale Proxy pid=#{inspect(self())}, received=9"
   end
 end
