@@ -99,7 +99,7 @@ defmodule Trike.Proxy do
   end
 
   def handle_info(:staleness_check, %{received: received} = state) do
-    Logger.info(["Stale Proxy pid=", inspect(self()), ", received=", received])
+    Logger.info("Stale Proxy pid=#{inspect(self())}, received=#{received}")
 
     {:noreply, %{state | received: 0}}
   end
