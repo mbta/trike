@@ -41,7 +41,7 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def init({ref, transport, stream, kinesis_client, clock}) do
-    :timer.send_interval(@staleness_check_interval_ms, :staleness_check)
+    {:ok, _ref} = :timer.send_interval(@staleness_check_interval_ms, :staleness_check)
 
     {:ok,
      %__MODULE__{
