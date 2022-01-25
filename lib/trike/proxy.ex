@@ -80,13 +80,15 @@ defmodule Trike.Proxy do
     {messages, rest} = extract(buffer <> data)
     current_time = clock.utc_now()
 
-    Enum.each(messages, fn msg ->
-      with {:ok, event} <- CloudEvent.from_ocs_message(msg, current_time, partition_key),
-           {:ok, event_json} <- Jason.encode(event) do
-        {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
-      else
+    messages
+    |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
+    |> Enum.each(fn event ->
+      case Jason.encode(event) do
+        {:ok, event_json} ->
+          {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
+
         error ->
-          Logger.info(["Failed to parse message: ", inspect(error)])
+          Logger.info(["Failed to encode message: ", inspect(error)])
       end
     end)
 
