@@ -3,7 +3,9 @@ import Config
 config :trike,
   kinesis_client: Trike.KinesisClient
 
-config :logger, backends: [Logger.Backend.Splunk, :console]
+config :logger,
+  backends: [Logger.Backend.Splunk, :console],
+  utc_log: true
 
 config :logger, Logger.Backend.Splunk,
   host: "https://http-inputs-mbta.splunkcloud.com/services/collector/event",
