@@ -25,42 +25,15 @@ defmodule Trike.CloudEvent do
               ]
 
   @doc """
-  Creates a CloudEvent struct given a full OCS message, the current time, and a
-  partition key.
+  Creates a CloudEvent struct given a full OCS message, the current time, and a partition key.
   """
-  @spec from_ocs_message(binary(), DateTime.t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec from_ocs_message(binary(), DateTime.t(), String.t()) :: t()
   def from_ocs_message(message, current_time, partition_key) do
-    case message_time(message, current_time) do
-      {:ok, time} ->
-        id = :crypto.hash(:sha, [DateTime.to_iso8601(time), message]) |> Base.encode64()
-
-        {:ok,
-         %__MODULE__{
-           time: time,
-           id: id,
-           partitionkey: partition_key,
-           data: %OcsRawMessage{
-             received_time: current_time,
-             raw: message
-           }
-         }}
-
-      {:error, error} ->
-        {:error, error}
-    end
-  end
-
-  @spec message_time(binary(), DateTime.t()) :: {:ok, DateTime.t()} | {:error, term()}
-  defp message_time(message, current_time) do
-    with [_count, _type, raw_time, _rest] <- String.split(message, ",", parts: 4),
-         {:ok, time} <- Time.from_iso8601(raw_time),
-         {:ok, eastern_time} <-
-           DateTime.shift_zone(current_time, "America/New_York"),
-         {:ok, timestamp} <-
-           DateTime.new(DateTime.to_date(eastern_time), time, "America/New_York") do
-      {:ok, timestamp}
-    else
-      error -> {:error, error}
-    end
+    %__MODULE__{
+      id: :crypto.hash(:sha, [DateTime.to_iso8601(current_time), message]) |> Base.encode64(),
+      partitionkey: partition_key,
+      time: current_time,
+      data: %OcsRawMessage{raw: message}
+    }
   end
 end
