@@ -24,6 +24,8 @@ Trike comes with a small tool, `fake_source`, for feeding it data over TCP for t
   - The `--bad` option will send Trike random bytes of data
   - `--good` and `--bad` used together will alternate good messages with bad data sent every five seconds
 
+# Architecture and Specification
+The design of Trike is specified in two RFCs. Trike's message format is documented in [socket-proxy-ocs-cloudevents](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0004-socket-proxy-ocs-cloudevents.md), while general architectural concerns and guidance on Kinesis usage are in [kinesis-proxy-json](https://github.com/mbta/technology-docs/blob/main/rfcs/accepted/0005-kinesis-proxy-json.md).
 
 # Deployment
 Trike runs as a Windows service on the opstech3 server in the MBTA's data center. You will need [remote desktop access to opstech3](https://github.com/mbta/wiki/blob/master/devops/accessing-windows-servers.md) to deploy it. If you are not connected to the MBTA's network, you will need to join it using [the VPN](https://www.mbta.com/org/workfromhome).
