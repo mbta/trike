@@ -1,4 +1,4 @@
-ARG BUILD_IMAGE=mbtatools/windows-elixir:1.14.0-erlang-25.0.4-windows-1809
+ARG BUILD_IMAGE=mbtatools/windows-elixir:1.12.3-erlang-22.3-windows-1809
 ARG FROM_IMAGE=mcr.microsoft.com/windows/servercore:1809
 
 FROM $BUILD_IMAGE as build
@@ -27,9 +27,9 @@ RUN mix release
 FROM $FROM_IMAGE
 
 USER ContainerAdministrator
-RUN curl -fSLo C:\vc_redist.x64.exe https://aka.ms/vs/17/release/vc_redist.x64.exe \
-    && .\vc_redist.x64.exe /install /quiet /norestart \
-    && del vc_redist.x64.exe
+COPY --from=build C:\\Erlang\\vcredist_x64.exe vcredist_x64.exe
+RUN .\vcredist_x64.exe /install /quiet /norestart \
+    && del vcredist_x64.exe
 
 COPY --from=build C:\\trike\\_build\\prod\\rel\\trike C:\\trike
 
@@ -37,7 +37,7 @@ WORKDIR C:\\trike
 
 # Ensure Erlang can run
 RUN dir && \
-    erts-12.3.2.4\bin\erl -noshell -noinput +V
+    erts-10.7\bin\erl -noshell -noinput +V
 
 EXPOSE 8001
 CMD ["C:\\trike\\bin\\trike.bat", "start"]
