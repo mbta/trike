@@ -9,7 +9,7 @@ defmodule ProxyTest do
   test "sends a properly formatted event to Kinesis" do
     state = %{
       buffer: "",
-      partition_key: "test_key",
+      connection_string: "{us -> them}",
       clock: FakeDateTime,
       stream: "test_stream",
       put_record_fn: fn stream, key, data ->
@@ -24,15 +24,15 @@ defmodule ProxyTest do
     Proxy.handle_info({:tcp, :socket, data}, state)
 
     event =
-      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"{us -> them}","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
 
-    assert_received({:put_record, "test_stream", "test_key", ^event})
+    assert_received({:put_record, "test_stream", "{us -> them}", ^event})
   end
 
   test "builds events with buffer" do
     state = %{
       buffer: "4994,TSCH,02:00:06",
-      partition_key: "test_key",
+      connection_string: "{us -> them}",
       clock: FakeDateTime,
       stream: "test_stream",
       put_record_fn: fn stream, key, data ->
@@ -48,9 +48,9 @@ defmodule ProxyTest do
     {:noreply, %{buffer: buffer}} = Proxy.handle_info({:tcp, :socket, data}, state)
 
     event =
-      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"{us -> them}","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
 
-    assert_received({:put_record, "test_stream", "test_key", ^event})
+    assert_received({:put_record, "test_stream", "{us -> them}", ^event})
 
     assert buffer == rest
   end
