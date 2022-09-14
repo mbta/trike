@@ -97,8 +97,8 @@ defmodule Trike.Proxy do
     {:noreply, %{state | buffer: rest, received: state.received + 1}}
   end
 
-  def handle_info({:tcp_closed, socket}, state) do
-    Logger.info(["Socket closed: ", inspect(socket)])
+  def handle_info({:tcp_closed, socket}, %{connection_string: connection_string} = state) do
+    Logger.info(["Socket closed: ", connection_string])
     {:stop, :normal, state}
   end
 
