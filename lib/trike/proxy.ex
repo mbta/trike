@@ -14,7 +14,7 @@ defmodule Trike.Proxy do
   @type t() :: %__MODULE__{
           socket: :gen_tcp.socket() | nil,
           stream: String.t(),
-          partition_key: String.t() | nil,
+          connection_string: String.t() | nil,
           buffer: binary(),
           received: integer(),
           put_record_fn:
@@ -23,12 +23,14 @@ defmodule Trike.Proxy do
         }
 
   @enforce_keys [:stream, :put_record_fn, :clock]
-  defstruct @enforce_keys ++ [:socket, :partition_key, buffer: "", received: 0]
+  defstruct @enforce_keys ++ [:socket, :connection_string, buffer: "", received: 0]
 
   @eot <<4>>
   @staleness_check_interval_ms Application.compile_env(:trike, :staleness_check_interval_ms)
 
   @impl :ranch_protocol
+  @spec start_link(any, any, nil | maybe_improper_list | map) ::
+          :ignore | {:error, any} | {:ok, pid}
   def start_link(ref, transport, opts) do
     GenServer.start_link(__MODULE__, {
       ref,
@@ -63,7 +65,7 @@ defmodule Trike.Proxy do
      %{
        state
        | socket: socket,
-         partition_key: connection_string
+         connection_string: connection_string
      }}
   end
 
@@ -72,7 +74,7 @@ defmodule Trike.Proxy do
         {:tcp, _socket, data},
         %{
           buffer: buffer,
-          partition_key: partition_key,
+          connection_string: connection_string,
           clock: clock,
           stream: stream
         } = state
@@ -81,11 +83,11 @@ defmodule Trike.Proxy do
     current_time = clock.utc_now()
 
     messages
-    |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
+    |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, connection_string))
     |> Enum.each(fn event ->
       case Jason.encode(event) do
         {:ok, event_json} ->
-          {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
+          {:ok, _result} = state.put_record_fn.(stream, connection_string, event_json)
 
         error ->
           Logger.info(["Failed to encode message: ", inspect(error)])
