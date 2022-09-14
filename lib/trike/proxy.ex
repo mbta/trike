@@ -85,6 +85,7 @@ defmodule Trike.Proxy do
     |> Enum.each(fn event ->
       case Jason.encode(event) do
         {:ok, event_json} ->
+          Logger.info(["Received message: ", event_json])
           {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
 
         error ->
