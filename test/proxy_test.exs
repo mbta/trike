@@ -60,4 +60,13 @@ defmodule ProxyTest do
 
     assert staleness_check =~ "Stale Proxy pid=#{inspect(self())}, received=9"
   end
+
+  test "logs connection string when the TCP socket is closed" do
+    tcp_closed =
+      capture_log(fn ->
+        Proxy.handle_info({:tcp_closed, :socket}, %{connection_string: "{us <- them}"})
+      end)
+
+    assert tcp_closed =~ "{us <- them}"
+  end
 end
