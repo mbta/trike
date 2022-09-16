@@ -86,7 +86,7 @@ defmodule Trike.Proxy do
       case Jason.encode(event) do
         {:ok, event_json} ->
           spawn(fn ->
-            {:ok, _result} = state.put_record_fn.(stream, connection_string, event_json)
+            {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
           end)
 
         error ->
