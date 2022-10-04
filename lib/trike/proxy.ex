@@ -102,6 +102,7 @@ defmodule Trike.Proxy do
 
   def handle_info(:staleness_check, %{received: received} = state) do
     Logger.info("Stale Proxy pid=#{inspect(self())}, received=#{received}")
+    Logger.info(inspect(:recon.info(self(), :memory_used), pretty: true))
 
     {:noreply, %{state | received: 0}}
   end

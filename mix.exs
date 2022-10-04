@@ -32,6 +32,7 @@ defmodule Trike.MixProject do
   defp deps do
     [
       {:ranch, "~> 2.0"},
+      {:recon, "~> 2.5"},
       {:ehmon, git: "https://github.com/mbta/ehmon.git"},
       {:logger_splunk_backend, "~> 2.0.0"},
       {:jason, "~> 1.2"},
