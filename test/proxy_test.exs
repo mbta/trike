@@ -55,9 +55,24 @@ defmodule ProxyTest do
     assert buffer == rest
   end
 
-  test "logs staleness check" do
-    staleness_check = capture_log(fn -> Proxy.handle_info(:staleness_check, %{received: 9}) end)
+  test "starts health checker after connecting" do
+    log =
+      capture_log(fn ->
+        {:ok, _socket} = :gen_tcp.connect(:localhost, 8001, [])
+        Process.sleep(200)
+      end)
 
-    assert staleness_check =~ "Stale Proxy pid=#{inspect(self())}, received=9"
+    assert log =~ "Started health checker"
+  end
+
+  test "logs connection string on shutdown" do
+    connection_string = "1.2.3.4:5 -> 6.7.8.9:10"
+
+    shutdown_log =
+      capture_log(fn ->
+        Proxy.handle_info({:tcp_closed, "socket"}, %{partition_key: connection_string})
+      end)
+
+    assert shutdown_log =~ "Socket closed: #{inspect(connection_string)}"
   end
 end

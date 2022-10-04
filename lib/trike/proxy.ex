@@ -26,7 +26,6 @@ defmodule Trike.Proxy do
   defstruct @enforce_keys ++ [:socket, :partition_key, buffer: "", received: 0]
 
   @eot <<4>>
-  @staleness_check_interval_ms Application.compile_env(:trike, :staleness_check_interval_ms)
 
   @impl :ranch_protocol
   def start_link(ref, transport, opts) do
@@ -41,23 +40,28 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def init({ref, transport, stream, kinesis_client, clock}) do
-    :timer.send_interval(@staleness_check_interval_ms, :staleness_check)
-
     {:ok,
      %__MODULE__{
        stream: stream,
        put_record_fn: &kinesis_client.put_record/3,
        clock: clock
-     }, {:continue, {ref, transport}}}
+     }, {:continue, {:continue_init, ref, transport}}}
   end
 
   @impl GenServer
-  def handle_continue({ref, transport}, state) do
+  def handle_continue({:continue_init, ref, transport}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
 
     Logger.info(["Accepted socket: ", connection_string])
+
+    children = [
+      {Trike.HealthChecker,
+       %{ranch_ref: ref, proxy_pid: self(), connection_string: connection_string}}
+    ]
+
+    Supervisor.start_link(children, strategy: :one_for_one)
 
     {:noreply,
      %{
@@ -95,15 +99,9 @@ defmodule Trike.Proxy do
     {:noreply, %{state | buffer: rest, received: state.received + 1}}
   end
 
-  def handle_info({:tcp_closed, socket}, state) do
-    Logger.info(["Socket closed: ", inspect(socket)])
+  def handle_info({:tcp_closed, _socket}, state) do
+    Logger.info(["Socket closed: ", inspect(state.partition_key)])
     {:stop, :normal, state}
-  end
-
-  def handle_info(:staleness_check, %{received: received} = state) do
-    Logger.info("Stale Proxy pid=#{inspect(self())}, received=#{received}")
-
-    {:noreply, %{state | received: 0}}
   end
 
   def handle_info(msg, state) do
