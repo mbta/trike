@@ -1,5 +1,10 @@
-ARG BUILD_IMAGE=mbtatools/windows-elixir:1.12.3-erlang-22.3-windows-1809
-ARG FROM_IMAGE=mcr.microsoft.com/windows/servercore:1809
+ARG ELIXIR_VERSION=1.12.3
+ARG ERLANG_VERSION=22.3
+ARG WINDOWS_VERSION=1809
+# See also: ERTS_VERSION in the from image below
+
+ARG BUILD_IMAGE=mbtatools/windows-elixir:$ELIXIR_VERSION-erlang-$ERLANG_VERSION-windows-$WINDOWS_VERSION
+ARG FROM_IMAGE=mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION
 
 FROM $BUILD_IMAGE as build
 
@@ -25,6 +30,7 @@ COPY config/runtime.exs config\\runtime.exs
 RUN mix release
 
 FROM $FROM_IMAGE
+ARG ERTS_VERSION=10.7
 
 USER ContainerAdministrator
 COPY --from=build C:\\Erlang\\vcredist_x64.exe vcredist_x64.exe
@@ -37,7 +43,7 @@ WORKDIR C:\\trike
 
 # Ensure Erlang can run
 RUN dir && \
-    erts-10.7\bin\erl -noshell -noinput +V
+    erts-%ERTS_VERSION%\bin\erl -noshell -noinput +V
 
 EXPOSE 8001
 CMD ["C:\\trike\\bin\\trike.bat", "start"]
