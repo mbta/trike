@@ -38,6 +38,7 @@ defmodule Trike.MixProject do
       {:tzdata, "~> 1.1"},
       {:ex_aws, "~> 2.2"},
       {:ex_aws_kinesis, "~> 2.0"},
+      {:configparser_ex, "~> 4.0", only: [:prod]},
       {:hackney, "~> 1.17"},
       {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
       {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
