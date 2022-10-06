@@ -65,6 +65,8 @@ defmodule Mix.Tasks.KinesisSource do
       send(self(), :timeout)
 
       state = %{
+        host: args[:host],
+        port: args[:port],
         sock: sock,
         shard_iterator: shard_iterator
       }
@@ -85,9 +87,19 @@ defmodule Mix.Tasks.KinesisSource do
           |> Map.fetch!("raw")
         end
 
-      :ok = :gen_tcp.send(state.sock, [Enum.intersperse(decoded_messages, @eot), @eot])
-      Logger.info("Forwarded #{length(decoded_messages)} messages")
-      state = %{state | shard_iterator: shard_iterator}
+      state =
+        case :gen_tcp.send(state.sock, [Enum.intersperse(decoded_messages, @eot), @eot]) do
+          :ok ->
+            Logger.info("Forwarded #{length(decoded_messages)} messages")
+            %{state | shard_iterator: shard_iterator}
+
+          {:error, e} ->
+            Logger.error("Error sending messages: #{inspect(e)}")
+            :gen_tcp.close(state.sock)
+            {:ok, sock} = do_connect(state.host, state.port)
+            # don't update the shard iterator, so we re-fetch those messages
+            %{state | sock: sock}
+        end
 
       {:noreply, state, 1_000}
     end
