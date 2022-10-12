@@ -52,21 +52,21 @@ defmodule Mix.Tasks.FakeSource do
     |> Stream.map(&String.trim/1)
     |> Stream.take_while(fn line ->
       Process.sleep(10)
-      # fail = rem(Time.utc_now().second, 5) == 0
-      # bytes = :crypto.strong_rand_bytes(5)
+      fail = rem(Time.utc_now().second, 5) == 0
+      bytes = :crypto.strong_rand_bytes(5)
 
       cond do
-        # send_good && send_bad && fail ->
-        #   Logger.info("Sending bad message #{inspect(bytes)}")
-        #   :ok == :gen_tcp.send(sock, [bytes, @eot])
+        send_good && send_bad && fail ->
+          Logger.info("Sending bad message #{inspect(bytes)}")
+          :ok == :gen_tcp.send(sock, [bytes, @eot])
 
         send_good ->
           Logger.info("Sending #{line}")
           :ok == :gen_tcp.send(sock, [line, @eot])
 
-        # send_bad ->
-        #   Logger.info("Sending bad message #{inspect(bytes)}")
-        #   :ok == :gen_tcp.send(sock, [bytes, @eot])
+        send_bad ->
+          Logger.info("Sending bad message #{inspect(bytes)}")
+          :ok == :gen_tcp.send(sock, [bytes, @eot])
       end
     end)
     |> Stream.run()
