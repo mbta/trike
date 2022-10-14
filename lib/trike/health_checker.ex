@@ -28,7 +28,7 @@ defmodule Trike.HealthChecker do
     ranch_info = :ranch.info(ranch_ref)
 
     Logger.info(
-      "Proxy #{inspect(conn_str)} mailbox size: #{inspect(memory_info[:message_queue_len])} ranch.info: #{inspect(ranch_info)}"
+      "health_check Proxy #{inspect(conn_str)} mailbox size: #{inspect(memory_info[:message_queue_len])} ranch.info: #{inspect(ranch_info)}"
     )
 
     Process.send_after(self(), :check_health, @health_check_interval_ms)
