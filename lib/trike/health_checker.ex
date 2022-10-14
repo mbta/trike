@@ -1,9 +1,13 @@
 defmodule Trike.HealthChecker do
+  @moduledoc """
+  Periodically logs health information about a Proxy and the Ranch listener.
+  """
   use GenServer
   require Logger
 
   @health_check_interval_ms Application.compile_env(:trike, :health_check_interval_ms)
 
+  @spec start_link(any()) :: {:ok, pid}
   def start_link(state) do
     GenServer.start_link(__MODULE__, state)
   end
