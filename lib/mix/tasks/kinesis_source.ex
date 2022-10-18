@@ -14,7 +14,15 @@ defmodule Mix.Tasks.KinesisSource do
   @impl true
   def run(args) do
     {opts, [stream_name], _unknowns} =
-      OptionParser.parse(args, strict: [host: :string, port: :integer])
+      OptionParser.parse(args,
+        strict: [
+          host: :string,
+          port: :integer,
+          shard_iterator_type: :string,
+          frequency: :integer,
+          scale: :integer
+        ]
+      )
 
     host =
       if opts[:host] do
@@ -24,6 +32,17 @@ defmodule Mix.Tasks.KinesisSource do
       end
 
     port = opts[:port] || 8001
+
+    shard_iterator_type =
+      case opts[:shard_iterator_type] do
+        nil -> :latest
+        "LATEST" -> :latest
+        "TRIM_HORIZON" -> :trim_horizon
+      end
+
+    frequency = opts[:frequency] || 1_000
+    scale = opts[:scale] || 1
+
     Application.ensure_all_started(:hackney)
     Application.ensure_all_started(:ex_aws)
 
@@ -37,8 +56,11 @@ defmodule Mix.Tasks.KinesisSource do
         GenServer.start_link(__MODULE__.ShardToPort,
           stream_name: stream_name,
           shard_id: shard_id,
+          shard_iterator_type: shard_iterator_type,
           host: host,
-          port: port
+          port: port,
+          frequency: frequency,
+          scale: scale
         )
     end
 
@@ -60,51 +82,90 @@ defmodule Mix.Tasks.KinesisSource do
 
     @impl GenServer
     def init(args) do
-      {:ok, sock} = do_connect(args[:host], args[:port])
-      shard_iterator = get_shard_iterator(args[:stream_name], args[:shard_id], :latest)
-      send(self(), :timeout)
+      shard_iterator =
+        get_shard_iterator(args[:stream_name], args[:shard_id], args[:shard_iterator_type])
 
       state = %{
+        shard_id: args[:shard_id],
         host: args[:host],
         port: args[:port],
-        sock: sock,
-        shard_iterator: shard_iterator
+        sock: nil,
+        shard_iterator: shard_iterator,
+        scale: args[:scale],
+        frequency: args[:frequency]
       }
+
+      {:ok, sock} = do_connect(state)
+
+      state = %{state | sock: sock}
+
+      send(self(), :timeout)
 
       {:ok, state}
     end
 
     @impl GenServer
     def handle_info(:timeout, state) do
-      {shard_iterator, records} = get_records(state.shard_iterator)
+      start = now()
 
+      {shard_iterator, records} = get_records(state)
+
+      state = maybe_send(state, shard_iterator, records)
+
+      Process.send_after(self(), :timeout, start + state.frequency, abs: true)
+      {:noreply, state}
+    end
+
+    defp now do
+      System.monotonic_time(:millisecond)
+    end
+
+    defp maybe_send(state, shard_iterator, records)
+
+    defp maybe_send(state, _, []) do
+      state
+    end
+
+    defp maybe_send(state, shard_iterator, records) do
       decoded_messages =
         for %{"Data" => b64_data} <- records do
           b64_data
           |> Base.decode64!()
           |> Jason.decode!()
+        end
+
+      raw_messages =
+        for record <- decoded_messages do
+          record
           |> Map.fetch!("data")
           |> Map.fetch!("raw")
         end
 
-      state =
-        case :gen_tcp.send(state.sock, [Enum.intersperse(decoded_messages, @eot), @eot]) do
-          :ok ->
-            Logger.info("Forwarded #{length(decoded_messages)} messages")
-            %{state | shard_iterator: shard_iterator}
+      scaled_messages = Enum.flat_map(raw_messages, &List.duplicate(&1, state.scale))
 
-          {:error, e} ->
-            Logger.error("Error sending messages: #{inspect(e)}")
-            :gen_tcp.close(state.sock)
-            {:ok, sock} = do_connect(state.host, state.port)
-            # don't update the shard iterator, so we re-fetch those messages
-            %{state | sock: sock}
-        end
+      case :gen_tcp.send(state.sock, [Enum.intersperse(scaled_messages, @eot), @eot]) do
+        :ok ->
+          latest =
+            decoded_messages
+            |> Enum.at(-1, %{"time" => :unknown})
+            |> Map.fetch!("time")
 
-      {:noreply, state, 1_000}
+          Logger.info(
+            "shard_id=#{state.shard_id} Forwarded messages, count=#{length(scaled_messages)} latest=#{latest}"
+          )
+
+          %{state | shard_iterator: shard_iterator}
+
+        {:error, e} ->
+          Logger.error("shard_id=#{state.shard_id} Error sending messages: #{inspect(e)}")
+          :gen_tcp.close(state.sock)
+          {:ok, sock} = do_connect(state)
+          # don't update the shard iterator, so we re-fetch those messages
+          %{state | sock: sock}
+      end
     end
 
-    @spec get_shard_iterator(String.t(), String.t(), :latest) :: String.t()
+    @spec get_shard_iterator(String.t(), String.t(), atom) :: String.t()
     defp get_shard_iterator(stream_name, shard_id, shard_iterator_type) do
       %{"ShardIterator" => shard_iterator} =
         stream_name
@@ -114,27 +175,36 @@ defmodule Mix.Tasks.KinesisSource do
       shard_iterator
     end
 
-    @spec get_records(String.t()) :: {String.t(), [map]}
-    defp get_records(shard_iterator) do
-      %{"NextShardIterator" => next_iterator, "Records" => records} =
-        shard_iterator
+    defp get_records(state) do
+      %{
+        "NextShardIterator" => next_iterator,
+        "Records" => records,
+        "MillisBehindLatest" => ms_behind_latest
+      } =
+        state.shard_iterator
         |> ExAws.Kinesis.get_records()
         |> ExAws.request!()
+
+      Logger.info(
+        "shard_id=#{state.shard_id} Received records count=#{length(records)} ms_behind_latest=#{ms_behind_latest}"
+      )
 
       {next_iterator, records}
     end
 
-    @spec do_connect(:inet.hostname(), :inet.port_number()) :: {:ok, :gen_tcp.socket()}
-    defp do_connect(host, port) do
-      case :gen_tcp.connect(host, port, [:binary, active: false, send_timeout: 1_000]) do
+    defp do_connect(state) do
+      case :gen_tcp.connect(state.host, state.port, [:binary, active: false, send_timeout: 1_000]) do
         {:ok, sock} ->
-          Logger.info("Connected to #{host}:#{port}!")
+          Logger.info("shard_id=#{state.shard_id} Connected to #{state.host}:#{state.port}!")
           {:ok, sock}
 
         {:error, err} ->
-          Logger.info("Couldn't connect to #{host}:#{port}: #{err}, trying again shortly")
+          Logger.info(
+            "shard_id=#{state.shard_id}  Couldn't connect to #{state.host}:#{state.port}: #{err}, trying again shortly"
+          )
+
           :timer.sleep(2_000)
-          do_connect(host, port)
+          do_connect(state)
       end
     end
   end
