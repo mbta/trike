@@ -51,7 +51,7 @@ defmodule Mix.Tasks.FakeSource do
     |> File.stream!()
     |> Stream.map(&String.trim/1)
     |> Stream.take_while(fn line ->
-      Process.sleep(10)
+      :timer.sleep(1_000)
       fail = rem(Time.utc_now().second, 5) == 0
       bytes = :crypto.strong_rand_bytes(5)
 
