@@ -55,6 +55,16 @@ defmodule ProxyTest do
     assert buffer == rest
   end
 
+  test "starts health checker after connecting" do
+    log =
+      capture_log(fn ->
+        {:ok, _socket} = :gen_tcp.connect(:localhost, 8001, [])
+        Process.sleep(200)
+      end)
+
+    assert log =~ "Started health checker"
+  end
+
   test "logs connection string on shutdown" do
     connection_string = "1.2.3.4:5 -> 6.7.8.9:10"
 
