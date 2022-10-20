@@ -65,6 +65,15 @@ defmodule ProxyTest do
     assert log =~ "Started health checker"
   end
 
+  test "ignores :ssl_closed from Hackney bug" do
+    log =
+      capture_log(fn ->
+        Proxy.handle_info({:ssl_closed, "socket"}, %{})
+      end)
+
+    refute log =~ "ssl_closed"
+  end
+
   test "logs connection string on shutdown" do
     connection_string = "1.2.3.4:5 -> 6.7.8.9:10"
 

@@ -99,6 +99,11 @@ defmodule Trike.Proxy do
     {:noreply, %{state | buffer: rest, received: state.received + 1}}
   end
 
+  # work around Hackney :ssl_closed bug
+  def handle_info({:ssl_closed, _socket}, state) do
+    {:noreply, state}
+  end
+
   def handle_info({:tcp_closed, _socket}, state) do
     Logger.info(["Socket closed: ", inspect(state.partition_key)])
     {:stop, :normal, state}
