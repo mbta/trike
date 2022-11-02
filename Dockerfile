@@ -33,6 +33,13 @@ FROM $FROM_IMAGE
 ARG ERTS_VERSION=10.7
 
 USER ContainerAdministrator
+
+# From https://github.com/moby/moby/issues/25982, set some registry values to
+# allow the container time to gracefully shut down
+
+RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 30 && \
+    reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 30000 /f
+
 COPY --from=build C:\\Erlang\\vcredist_x64.exe vcredist_x64.exe
 RUN .\vcredist_x64.exe /install /quiet /norestart \
     && del vcredist_x64.exe
