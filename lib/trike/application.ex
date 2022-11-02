@@ -16,14 +16,20 @@ defmodule Trike.Application do
       "Starting Trike on port #{inspect(listen_port)} proxying to #{kinesis_stream} (#{inspect(kinesis_client)})"
     )
 
-    :ranch.start_listener(
-      make_ref(),
-      :ranch_tcp,
-      [{:port, listen_port}],
-      Trike.Proxy,
-      stream: kinesis_stream,
-      kinesis_client: kinesis_client,
-      clock: Application.get_env(:trike, :clock)
-    )
+    listener_ref = make_ref()
+
+    children = [
+      :ranch.child_spec(
+        listener_ref,
+        :ranch_tcp,
+        [port: listen_port],
+        Trike.Proxy,
+        stream: kinesis_stream,
+        kinesis_client: kinesis_client,
+        clock: Application.get_env(:trike, :clock)
+      )
+    ]
+
+    Supervisor.start_link(children, strategy: :one_for_one)
   end
 end
