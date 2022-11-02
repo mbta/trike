@@ -57,7 +57,9 @@ defmodule Trike.Proxy do
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
 
-    Logger.info(["Accepted socket: ", connection_string])
+    Logger.info(
+      "Accepted socket: #{inspect(connection_string)} pid=#{inspect(self())} socket=#{inspect(socket)}"
+    )
 
     children = [
       {Trike.HealthChecker,
@@ -93,7 +95,12 @@ defmodule Trike.Proxy do
     |> Enum.each(fn event ->
       case Jason.encode(event) do
         {:ok, event_json} ->
-          {:ok, _result} = state.put_record_fn.(stream, partition_key, event_json)
+          {usec, {:ok, _result}} =
+            :timer.tc(state.put_record_fn, [stream, partition_key, event_json])
+
+          Logger.info(
+            "put_record_timing stream=#{stream} pkey=#{partition_key} size=#{byte_size(event_json)} msec=#{div(usec, 1000)}"
+          )
 
         error ->
           Logger.info(["Failed to encode message: ", inspect(error)])
