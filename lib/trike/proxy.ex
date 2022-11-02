@@ -12,6 +12,7 @@ defmodule Trike.Proxy do
   @behaviour :ranch_protocol
 
   @type t() :: %__MODULE__{
+          transport: atom,
           socket: :gen_tcp.socket() | nil,
           stream: String.t(),
           partition_key: String.t() | nil,
@@ -23,7 +24,7 @@ defmodule Trike.Proxy do
         }
 
   @enforce_keys [:stream, :put_record_fn, :clock]
-  defstruct @enforce_keys ++ [:socket, :partition_key, buffer: "", received: 0]
+  defstruct @enforce_keys ++ [:transport, :socket, :partition_key, buffer: "", received: 0]
 
   @eot <<4>>
 
@@ -40,6 +41,8 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def init({ref, transport, stream, kinesis_client, clock}) do
+    Process.flag(:trap_exit, true)
+
     {:ok,
      %__MODULE__{
        stream: stream,
@@ -66,7 +69,8 @@ defmodule Trike.Proxy do
     {:noreply,
      %{
        state
-       | socket: socket,
+       | transport: transport,
+         socket: socket,
          partition_key: connection_string
      }}
   end
@@ -112,6 +116,13 @@ defmodule Trike.Proxy do
   def handle_info(msg, state) do
     Logger.info(["Proxy received unknown message: ", inspect(msg)])
     {:noreply, state}
+  end
+
+  @impl GenServer
+  def terminate(_reason, state) do
+    Logger.info("Terminating pid=#{inspect(self())} socket=#{inspect(state.socket)}")
+    state.transport.close(state.socket)
+    {:ok, state}
   end
 
   @spec extract(binary()) :: {[binary()], binary()}
