@@ -58,7 +58,7 @@ defmodule Trike.Proxy do
 
     children = [
       {Trike.HealthChecker,
-       %{ranch_ref: ref, proxy_pid: self(), connection_string: connection_string}}
+       [ranch_ref: ref, proxy_pid: self(), connection_string: connection_string]}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)
