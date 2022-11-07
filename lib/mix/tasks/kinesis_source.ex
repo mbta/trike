@@ -43,7 +43,7 @@ defmodule Mix.Tasks.KinesisSource do
     frequency = opts[:frequency] || 1_000
     scale = opts[:scale] || 1
 
-    Application.ensure_all_started(:hackney)
+    Application.ensure_all_started(:req)
     Application.ensure_all_started(:ex_aws)
 
     %{"StreamDescription" => %{"Shards" => shards}} =
