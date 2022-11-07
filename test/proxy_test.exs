@@ -16,6 +16,8 @@ defmodule ProxyTest do
         send(self(), {:put_record, stream, key, data})
         {:ok, :ok}
       end,
+      socket: :socket,
+      transport: __MODULE__.FakeTransport,
       received: 0
     }
 
@@ -27,6 +29,7 @@ defmodule ProxyTest do
       ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
 
     assert_received({:put_record, "test_stream", "test_key", ^event})
+    assert_received({:setopts, :socket, active: :once})
   end
 
   test "builds events with buffer" do
@@ -39,6 +42,8 @@ defmodule ProxyTest do
         send(self(), {:put_record, stream, key, data})
         {:ok, :ok}
       end,
+      socket: :socket,
+      transport: __MODULE__.FakeTransport,
       received: 0
     }
 
@@ -74,5 +79,12 @@ defmodule ProxyTest do
       end)
 
     assert shutdown_log =~ "Socket closed: #{inspect(connection_string)}"
+  end
+
+  defmodule FakeTransport do
+    @spec setopts(any(), Keyword.t()) :: :ok
+    def setopts(socket, opts) when is_list(opts) do
+      send(self(), {:setopts, socket, opts})
+    end
   end
 end
