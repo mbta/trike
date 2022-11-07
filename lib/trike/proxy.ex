@@ -91,22 +91,22 @@ defmodule Trike.Proxy do
     {messages, rest} = extract(buffer <> data)
     current_time = clock.utc_now()
 
-    messages
-    |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
-    |> Enum.each(fn event ->
-      case Jason.encode(event) do
-        {:ok, event_json} ->
-          {usec, {:ok, _result}} =
-            :timer.tc(state.put_record_fn, [stream, partition_key, event_json])
+    records =
+      messages
+      |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
 
-          Logger.info(
-            "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} size=#{byte_size(event_json)} msec=#{div(usec, 1000)}"
-          )
+    encoded = Jason.encode!(records)
 
-        error ->
-          Logger.info(["Failed to encode message: ", inspect(error)])
-      end
-    end)
+    {usec, {result_key, _} = result} =
+      :timer.tc(state.put_record_fn, [
+        stream,
+        partition_key,
+        encoded
+      ])
+
+    Logger.info(
+      "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{length(records)} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
+    )
 
     state.transport.setopts(state.socket, active: :once)
 
