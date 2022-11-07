@@ -55,7 +55,7 @@ defmodule Trike.Proxy do
   def handle_continue({:continue_init, ref, transport}, state) do
     {:ok, socket} = :ranch.handshake(ref)
     Logger.metadata(socket: inspect(socket))
-    :ok = transport.setopts(socket, active: true)
+    :ok = transport.setopts(socket, active: :once, buffer: 131_072)
     connection_string = format_socket(socket)
 
     Logger.info("Accepted socket: conn=#{inspect(connection_string)}")
@@ -107,6 +107,8 @@ defmodule Trike.Proxy do
           Logger.info(["Failed to encode message: ", inspect(error)])
       end
     end)
+
+    state.transport.setopts(state.socket, active: :once)
 
     Logger.metadata(request_id: nil)
     {:noreply, %{state | buffer: rest, received: state.received + 1}}
