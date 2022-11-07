@@ -18,13 +18,22 @@ defmodule Trike.Proxy do
           partition_key: String.t() | nil,
           buffer: binary(),
           received: integer(),
+          last_sequence_number: String.t() | nil,
           put_record_fn:
             (Kinesis.stream_name(), binary(), binary() -> {:ok, term()} | {:error, term()}),
           clock: module()
         }
 
   @enforce_keys [:stream, :put_record_fn, :clock]
-  defstruct @enforce_keys ++ [:transport, :socket, :partition_key, buffer: "", received: 0]
+  defstruct @enforce_keys ++
+              [
+                :transport,
+                :socket,
+                :partition_key,
+                buffer: "",
+                received: 0,
+                last_sequence_number: nil
+              ]
 
   @eot <<4>>
 
@@ -46,7 +55,7 @@ defmodule Trike.Proxy do
     {:ok,
      %__MODULE__{
        stream: stream,
-       put_record_fn: &kinesis_client.put_record/3,
+       put_record_fn: &kinesis_client.put_record/4,
        clock: clock
      }, {:continue, {:continue_init, ref, transport}}}
   end
@@ -97,21 +106,38 @@ defmodule Trike.Proxy do
 
     encoded = Jason.encode!(records)
 
+    opts =
+      if state.last_sequence_number do
+        [sequence_number_for_ordering: state.last_sequence_number]
+      else
+        []
+      end
+
     {usec, {result_key, _} = result} =
       :timer.tc(state.put_record_fn, [
         stream,
         partition_key,
-        encoded
+        encoded,
+        opts
       ])
 
     Logger.info(
       "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{length(records)} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
     )
 
+    {:ok, %{"SequenceNumber" => last_sequence_number}} = result
+
     state.transport.setopts(state.socket, active: :once)
 
     Logger.metadata(request_id: nil)
-    {:noreply, %{state | buffer: rest, received: state.received + 1}}
+
+    {:noreply,
+     %{
+       state
+       | buffer: rest,
+         received: state.received + 1,
+         last_sequence_number: last_sequence_number
+     }}
   end
 
   def handle_info({:tcp_closed, socket}, %{socket: socket} = state) do
