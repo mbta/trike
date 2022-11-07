@@ -54,12 +54,11 @@ defmodule Trike.Proxy do
   @impl GenServer
   def handle_continue({:continue_init, ref, transport}, state) do
     {:ok, socket} = :ranch.handshake(ref)
+    Logger.metadata(socket: inspect(socket))
     :ok = transport.setopts(socket, active: true)
     connection_string = format_socket(socket)
 
-    Logger.info(
-      "Accepted socket: #{inspect(connection_string)} pid=#{inspect(self())} socket=#{inspect(socket)}"
-    )
+    Logger.info("Accepted socket: conn=#{inspect(connection_string)}")
 
     children = [
       {Trike.HealthChecker,
@@ -87,6 +86,8 @@ defmodule Trike.Proxy do
           stream: stream
         } = state
       ) do
+    Logger.metadata(request_id: :erlang.unique_integer([:positive]))
+    Logger.info("got_data size=#{byte_size(data)} buf_size=#{byte_size(buffer)}")
     {messages, rest} = extract(buffer <> data)
     current_time = clock.utc_now()
 
@@ -99,7 +100,7 @@ defmodule Trike.Proxy do
             :timer.tc(state.put_record_fn, [stream, partition_key, event_json])
 
           Logger.info(
-            "put_record_timing stream=#{stream} pkey=#{partition_key} size=#{byte_size(event_json)} msec=#{div(usec, 1000)}"
+            "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} size=#{byte_size(event_json)} msec=#{div(usec, 1000)}"
           )
 
         error ->
@@ -107,16 +108,12 @@ defmodule Trike.Proxy do
       end
     end)
 
+    Logger.metadata(request_id: nil)
     {:noreply, %{state | buffer: rest, received: state.received + 1}}
   end
 
-  # work around Hackney :ssl_closed bug
-  def handle_info({:ssl_closed, _socket}, state) do
-    {:noreply, state}
-  end
-
-  def handle_info({:tcp_closed, _socket}, state) do
-    Logger.info(["Socket closed: ", inspect(state.partition_key)])
+  def handle_info({:tcp_closed, socket}, %{socket: socket} = state) do
+    Logger.info("Socket closed conn=#{inspect(state.partition_key)}")
     {:stop, :normal, state}
   end
 
@@ -127,7 +124,7 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def terminate(_reason, state) do
-    Logger.info("Terminating pid=#{inspect(self())} socket=#{inspect(state.socket)}")
+    Logger.info("Terminating")
     state.transport.close(state.socket)
     {:ok, state}
   end
