@@ -31,7 +31,7 @@ defmodule Trike.HealthChecker do
     connection_string = Keyword.get(opts, :connection_string)
 
     if ranch_ref != nil and proxy_pid != nil and connection_string != nil do
-      state = %{
+      state = %__MODULE__{
         ranch_ref: ranch_ref,
         proxy_pid: proxy_pid,
         connection_string: connection_string
@@ -41,7 +41,7 @@ defmodule Trike.HealthChecker do
       {:ok, state}
     else
       Logger.warn("missing state arg in health_checker")
-      :ignore
+      {:stop, :missing_arg}
     end
   end
 
