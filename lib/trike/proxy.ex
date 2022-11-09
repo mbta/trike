@@ -87,56 +87,21 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def handle_info(
-        {:tcp, _socket, data},
+        {:tcp, socket, data},
         %{
-          buffer: buffer,
-          partition_key: partition_key,
-          clock: clock,
-          stream: stream
+          socket: socket
         } = state
       ) do
-    Logger.metadata(request_id: :erlang.unique_integer([:positive]))
-    Logger.info("got_data size=#{byte_size(data)} buf_size=#{byte_size(buffer)}")
-    {messages, rest} = extract(buffer <> data)
-    current_time = clock.utc_now()
+    {:ok, buffer, received, sequence_number} = handle_data(state, data)
 
-    records =
-      messages
-      |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
-
-    encoded = Jason.encode!(records)
-
-    opts =
-      if state.last_sequence_number do
-        [sequence_number_for_ordering: state.last_sequence_number]
-      else
-        []
-      end
-
-    {usec, {result_key, _} = result} =
-      :timer.tc(state.put_record_fn, [
-        stream,
-        partition_key,
-        encoded,
-        opts
-      ])
-
-    Logger.info(
-      "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{length(records)} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
-    )
-
-    {:ok, %{"SequenceNumber" => last_sequence_number}} = result
-
-    state.transport.setopts(state.socket, active: :once)
-
-    Logger.metadata(request_id: nil)
+    state.transport.setopts(socket, active: :once)
 
     {:noreply,
      %{
        state
-       | buffer: rest,
-         received: state.received + 1,
-         last_sequence_number: last_sequence_number
+       | buffer: buffer,
+         received: state.received + received,
+         last_sequence_number: sequence_number
      }}
   end
 
@@ -155,6 +120,55 @@ defmodule Trike.Proxy do
     Logger.info("Terminating")
     state.transport.close(state.socket)
     {:ok, state}
+  end
+
+  @spec handle_data(t(), binary()) :: {:ok, binary(), non_neg_integer(), String.t()}
+  defp handle_data(state, data) do
+    %{
+      buffer: buffer,
+      partition_key: partition_key,
+      clock: clock,
+      stream: stream,
+      last_sequence_number: last_sequence_number
+    } = state
+
+    current_time = clock.utc_now()
+
+    Logger.metadata(request_id: :erlang.unique_integer([:positive]))
+    Logger.info("got_data size=#{byte_size(data)} buf_size=#{byte_size(buffer)}")
+    {messages, rest} = extract(buffer <> data)
+
+    records =
+      messages
+      |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
+
+    records_length = length(records)
+    encoded = Jason.encode!(records)
+
+    opts =
+      if last_sequence_number do
+        [sequence_number_for_ordering: last_sequence_number]
+      else
+        []
+      end
+
+    {usec, {result_key, _} = result} =
+      :timer.tc(state.put_record_fn, [
+        stream,
+        partition_key,
+        encoded,
+        opts
+      ])
+
+    Logger.info(
+      "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
+    )
+
+    {:ok, %{"SequenceNumber" => last_sequence_number}} = result
+
+    Logger.metadata(request_id: nil)
+
+    {:ok, rest, records_length, last_sequence_number}
   end
 
   @spec extract(binary()) :: {[binary()], binary()}
