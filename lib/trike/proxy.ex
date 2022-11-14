@@ -86,7 +86,7 @@ defmodule Trike.Proxy do
     {:ok, buffer, sequence_number} = handle_data(state, data)
 
     state.transport.setopts(socket, active: :once)
-
+    
     {:noreply,
      %{
        state
@@ -136,6 +136,7 @@ defmodule Trike.Proxy do
       if records == [] do
         {:ok, rest, last_sequence_number}
       else
+        Logger.info(records)
         records_length = length(records)
         encoded = Jason.encode!(records)
 
