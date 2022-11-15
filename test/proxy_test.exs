@@ -126,6 +126,6 @@ defmodule ProxyTest do
 
     proxy_log = capture_log(fn -> Proxy.handle_info({:tcp, :socket, data}, state) end)
 
-    assert proxy_log =~ "data\":{\"raw\":\""    
+    assert proxy_log =~ "data\":{\"raw\":\""
   end
 end
