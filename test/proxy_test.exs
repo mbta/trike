@@ -48,6 +48,19 @@ defmodule ProxyTest do
     assert_received({:setopts, :socket, active: :once})
   end
 
+  test "does not send a record if we didn't receive a full packet", %{state: state} do
+    state = %{state | buffer: "buffer"}
+    data = "partial"
+
+    {:noreply, new_state} = Proxy.handle_info({:tcp, :socket, data}, state)
+
+    expected_state = %{state | buffer: "bufferpartial"}
+    assert expected_state == new_state
+
+    refute_received({:put_record, _stream, _key, _event, _opts})
+    assert_received({:setopts, :socket, active: :once})
+  end
+
   test "builds events with buffer", %{state: state} do
     state = %{state | buffer: "4994,TSCH,02:00:06"}
     data = ",R,RLD,W#{@eot}4995,TSCH,02:00:07"
