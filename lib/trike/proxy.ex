@@ -86,7 +86,7 @@ defmodule Trike.Proxy do
     {:ok, buffer, sequence_number} = handle_data(state, data)
 
     state.transport.setopts(socket, active: :once)
-    
+
     {:noreply,
      %{
        state
