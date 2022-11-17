@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # cache the ASDF directory, using the values from .tool-versions
       - name: ASDF cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.asdf
           key: ${{ runner.os }}-asdf-v2-${{ hashFiles('.tool-versions') }}
@@ -29,9 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: asdf
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: ASDF cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.asdf
           key: ${{ runner.os }}-asdf-v2-${{ hashFiles('.tool-versions') }}
@@ -42,7 +42,7 @@ jobs:
         if: steps.asdf-cache.outputs.cache-hit != 'true'
       - name: Restore dependencies cache
         id: deps-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
@@ -66,7 +66,7 @@ jobs:
           echo "${{ github.event.pull_request.head.sha }}" > cover/PR_SHA
         if: github.event.pull_request
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: elixir-lcov
           path: cover/
