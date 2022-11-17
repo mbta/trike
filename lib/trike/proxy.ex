@@ -17,7 +17,6 @@ defmodule Trike.Proxy do
           stream: String.t(),
           partition_key: String.t() | nil,
           buffer: binary(),
-          received: integer(),
           last_sequence_number: String.t() | nil,
           put_record_fn:
             (Kinesis.stream_name(), binary(), binary() -> {:ok, term()} | {:error, term()}),
@@ -31,7 +30,6 @@ defmodule Trike.Proxy do
                 :socket,
                 :partition_key,
                 buffer: "",
-                received: 0,
                 last_sequence_number: nil
               ]
 
@@ -85,7 +83,7 @@ defmodule Trike.Proxy do
           socket: socket
         } = state
       ) do
-    {:ok, buffer, received, sequence_number} = handle_data(state, data)
+    {:ok, buffer, sequence_number} = handle_data(state, data)
 
     state.transport.setopts(socket, active: :once)
 
@@ -93,7 +91,6 @@ defmodule Trike.Proxy do
      %{
        state
        | buffer: buffer,
-         received: state.received + received,
          last_sequence_number: sequence_number
      }}
   end
@@ -115,7 +112,7 @@ defmodule Trike.Proxy do
     {:ok, state}
   end
 
-  @spec handle_data(t(), binary()) :: {:ok, binary(), non_neg_integer(), String.t()}
+  @spec handle_data(t(), binary()) :: {:ok, binary(), String.t()}
   defp handle_data(state, data) do
     %{
       buffer: buffer,
@@ -137,7 +134,7 @@ defmodule Trike.Proxy do
 
     result =
       if records == [] do
-        {:ok, rest, 0, last_sequence_number}
+        {:ok, rest, last_sequence_number}
       else
         records_length = length(records)
         encoded = Jason.encode!(records)
@@ -162,7 +159,7 @@ defmodule Trike.Proxy do
         )
 
         {:ok, %{"SequenceNumber" => last_sequence_number}} = result
-        {:ok, rest, records_length, last_sequence_number}
+        {:ok, rest, last_sequence_number}
       end
 
     Logger.metadata(request_id: nil)
