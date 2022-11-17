@@ -109,23 +109,12 @@ defmodule ProxyTest do
     end
   end
 
-  test "logs messages" do
-    state = %{
-      buffer: "",
-      partition_key: "test_key",
-      clock: FakeDateTime,
-      stream: "test_stream",
-      put_record_fn: fn stream, key, data ->
-        send(self(), {:put_record, stream, key, data})
-        {:ok, :ok}
-      end,
-      received: 0
-    }
+  test "logs messages", %{state: state} do
+    data = "4994,TSCH,02:00:06,R,RLD,W#{@eot}4995,TSCH,03:00:06,R,RLD,W#{@eot}"
 
-    data = "4994,TSCH,02:00:06,R,RLD,W#{@eot}"
+    proxy_log = capture_log(fn -> Proxy.handle_info({:tcp, state.socket, data}, state) end)
 
-    proxy_log = capture_log(fn -> Proxy.handle_info({:tcp, :socket, data}, state) end)
-
-    assert proxy_log =~ "data\":{\"raw\":\""
+    assert proxy_log =~ "[info]  ocs_event raw=\"4994"
+    assert proxy_log =~ "[info]  ocs_event raw=\"4995"
   end
 end

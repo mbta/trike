@@ -136,7 +136,6 @@ defmodule Trike.Proxy do
       if records == [] do
         {:ok, rest, last_sequence_number}
       else
-        Logger.info(records)
         records_length = length(records)
         encoded = Jason.encode!(records)
 
@@ -154,6 +153,11 @@ defmodule Trike.Proxy do
             encoded,
             opts
           ])
+
+        Enum.each(
+          records,
+          &Logger.info("ocs_event raw=#{inspect(&1.data.raw)} time=#{inspect(&1.time)}")
+        )
 
         Logger.info(
           "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
