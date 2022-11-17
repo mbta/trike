@@ -128,10 +128,13 @@ defmodule Mix.Tasks.KinesisSource do
 
     defp maybe_send(state, shard_iterator, records) do
       decoded_messages =
-        for %{"Data" => b64_data} <- records do
-          b64_data
-          |> Base.decode64!()
-          |> Jason.decode!()
+        for %{"Data" => b64_data} <- records,
+            decoded =
+              b64_data
+              |> Base.decode64!()
+              |> Jason.decode!(),
+            message <- List.wrap(decoded) do
+          message
         end
 
       raw_messages =
