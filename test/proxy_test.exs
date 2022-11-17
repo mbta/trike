@@ -17,8 +17,7 @@ defmodule ProxyTest do
         {:ok, %{"SequenceNumber" => "0"}}
       end,
       socket: :socket,
-      transport: __MODULE__.FakeTransport,
-      received: 0
+      transport: __MODULE__.FakeTransport
     }
 
     {:ok, %{state: state}}
