@@ -27,7 +27,8 @@ defmodule Trike.Application do
         stream: kinesis_stream,
         kinesis_client: kinesis_client,
         clock: Application.get_env(:trike, :clock)
-      )
+      ),
+      {Trike.HealthChecker, [ranch_ref: listener_ref]}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)

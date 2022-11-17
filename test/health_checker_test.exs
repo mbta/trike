@@ -4,8 +4,6 @@ defmodule HealthCheckerTest do
   alias Trike.HealthChecker
 
   test "health check logs required info" do
-    conn_str = "1.2.3.4:5 -> 6.7.8.9:10"
-
     ranch_ref = make_ref()
 
     :ranch.start_listener(
@@ -18,15 +16,16 @@ defmodule HealthCheckerTest do
       clock: Application.get_env(:trike, :clock)
     )
 
+    {:ok, _socket} = :gen_tcp.connect(:localhost, 8002, [])
+
     health_check_log =
       capture_log(fn ->
-        HealthChecker.handle_info(
-          :check_health,
-          %{ranch_ref: ranch_ref, proxy_pid: self(), connection_string: conn_str}
-        )
+        HealthChecker.log_ranch_info(ranch_ref)
       end)
 
-    assert health_check_log =~
-             "Proxy \"1.2.3.4:5 -> 6.7.8.9:10\" mailbox size: 0 ranch.info: %{active_connections: "
+    assert health_check_log =~ "ranch_info=%{active_connections: "
+    assert health_check_log =~ "Proxy proxy_pid=#PID<"
+    assert health_check_log =~ ~s[conn="{127.0.0.1:8002 -> ]
+    assert health_check_log =~ "mailbox_size="
   end
 end

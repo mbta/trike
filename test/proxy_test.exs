@@ -63,16 +63,6 @@ defmodule ProxyTest do
     assert buffer == rest
   end
 
-  test "starts health checker after connecting" do
-    log =
-      capture_log(fn ->
-        {:ok, _socket} = :gen_tcp.connect(:localhost, 8001, [])
-        Process.sleep(200)
-      end)
-
-    assert log =~ "Started health checker"
-  end
-
   test "sends the previous sequence number to ensure ordering", %{state: state} do
     data = "4994,TSCH,02:00:06,R,RLD,W#{@eot}"
 
