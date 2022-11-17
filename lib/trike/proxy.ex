@@ -135,33 +135,39 @@ defmodule Trike.Proxy do
       messages
       |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
 
-    records_length = length(records)
-    encoded = Jason.encode!(records)
-
-    opts =
-      if last_sequence_number do
-        [sequence_number_for_ordering: last_sequence_number]
+    result =
+      if records == [] do
+        {:ok, rest, 0, last_sequence_number}
       else
-        []
+        records_length = length(records)
+        encoded = Jason.encode!(records)
+
+        opts =
+          if last_sequence_number do
+            [sequence_number_for_ordering: last_sequence_number]
+          else
+            []
+          end
+
+        {usec, {result_key, _} = result} =
+          :timer.tc(state.put_record_fn, [
+            stream,
+            partition_key,
+            encoded,
+            opts
+          ])
+
+        Logger.info(
+          "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
+        )
+
+        {:ok, %{"SequenceNumber" => last_sequence_number}} = result
+        {:ok, rest, records_length, last_sequence_number}
       end
-
-    {usec, {result_key, _} = result} =
-      :timer.tc(state.put_record_fn, [
-        stream,
-        partition_key,
-        encoded,
-        opts
-      ])
-
-    Logger.info(
-      "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
-    )
-
-    {:ok, %{"SequenceNumber" => last_sequence_number}} = result
 
     Logger.metadata(request_id: nil)
 
-    {:ok, rest, records_length, last_sequence_number}
+    result
   end
 
   @spec extract(binary()) :: {[binary()], binary()}
