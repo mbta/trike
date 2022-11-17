@@ -69,13 +69,6 @@ defmodule Trike.Proxy do
 
     Logger.info("Accepted socket: conn=#{inspect(connection_string)}")
 
-    children = [
-      {Trike.HealthChecker,
-       [ranch_ref: ref, proxy_pid: self(), connection_string: connection_string]}
-    ]
-
-    Supervisor.start_link(children, strategy: :one_for_one)
-
     {:noreply,
      %{
        state
