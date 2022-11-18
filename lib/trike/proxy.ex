@@ -154,6 +154,11 @@ defmodule Trike.Proxy do
             opts
           ])
 
+        Enum.each(
+          records,
+          &Logger.info("ocs_event raw=#{inspect(&1.data.raw)} time=#{inspect(&1.time)}")
+        )
+
         Logger.info(
           "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
         )
