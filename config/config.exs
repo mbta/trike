@@ -12,6 +12,7 @@ config :ex_aws,
   json_codec: Jason
 
 config :trike,
+  listen_port: 8001,
   kinesis_client: Fakes.FakeKinesisClient,
   clock: DateTime,
   health_check_interval_ms: 60 * 1_000
