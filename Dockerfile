@@ -30,7 +30,7 @@ COPY config/runtime.exs config\\runtime.exs
 RUN mix release
 
 FROM $FROM_IMAGE
-ARG ERTS_VERSION=10.7
+ARG ERTS_VERSION=13.1.3
 
 USER ContainerAdministrator
 
