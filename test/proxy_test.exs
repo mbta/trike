@@ -17,10 +17,43 @@ defmodule ProxyTest do
         {:ok, %{"SequenceNumber" => "0"}}
       end,
       socket: :socket,
+      stale_timeout_ms: Application.get_env(:trike, :stale_timeout_ms),
+      ranch: __MODULE__.FakeRanch,
       transport: __MODULE__.FakeTransport
     }
 
     {:ok, %{state: state}}
+  end
+
+  describe "handle_continue(:continue_init)" do
+    test "gets the socket by handshaking with ranch", %{state: state} do
+      ref = make_ref()
+      {:noreply, state} = Proxy.handle_continue({:continue_init, ref}, state)
+      assert state.socket == :handshake_socket
+    end
+
+    test "sets the partition key to something based on the socket", %{state: state} do
+      ref = make_ref()
+      {:noreply, state} = Proxy.handle_continue({:continue_init, ref}, state)
+      assert state.partition_key == ":handshake_socket"
+    end
+
+    test "sets the transport options", %{state: state} do
+      ref = make_ref()
+      {:noreply, state} = Proxy.handle_continue({:continue_init, ref}, state)
+      socket = state.socket
+      assert_receive {:setopts, ^socket, [active: :once, buffer: _, keepalive: true]}
+    end
+
+    test "starts a timer for stale messages", %{state: state} do
+      ref = make_ref()
+      state = %{state | stale_timeout_ms: 10}
+      {:noreply, state} = Proxy.handle_continue({:continue_init, ref}, state)
+      assert is_reference(state.stale_timeout_ref)
+
+      socket = state.socket
+      assert_receive {:stale_timeout, ^socket}
+    end
   end
 
   test "sends a properly formatted event to Kinesis", %{state: state} do
@@ -53,8 +86,8 @@ defmodule ProxyTest do
 
     {:noreply, new_state} = Proxy.handle_info({:tcp, :socket, data}, state)
 
-    expected_state = %{state | buffer: "bufferpartial"}
-    assert expected_state == new_state
+    assert new_state.buffer == "bufferpartial"
+    assert new_state.last_sequence_number == state.last_sequence_number
 
     refute_received({:put_record, _stream, _key, _event, _opts})
     assert_received({:setopts, :socket, active: :once})
@@ -90,23 +123,44 @@ defmodule ProxyTest do
     assert_received({:setopts, :socket, active: :once})
   end
 
+  test "reschedules the stale timeout when we get any data", %{state: state} do
+    data = "bytes"
+
+    {:noreply, new_state} = Proxy.handle_info({:tcp, state.socket, data}, state)
+
+    refute new_state.stale_timeout_ref == state.stale_timeout_ref
+  end
+
   test "logs connection string on shutdown", %{state: state} do
     connection_string = "1.2.3.4:5 -> 6.7.8.9:10"
 
     shutdown_log =
       capture_log(fn ->
-        Proxy.handle_info({:tcp_closed, state.socket}, %{state | partition_key: connection_string})
+        assert {:stop, :normal, _} =
+                 Proxy.handle_info({:tcp_closed, state.socket}, %{
+                   state
+                   | partition_key: connection_string
+                 })
       end)
 
     assert shutdown_log =~ "Socket closed"
     assert shutdown_log =~ inspect(connection_string)
   end
 
-  defmodule FakeTransport do
-    @spec setopts(any(), Keyword.t()) :: :ok
-    def setopts(socket, opts) when is_list(opts) do
-      send(self(), {:setopts, socket, opts})
-    end
+  test "logs connection string on stale timeout", %{state: state} do
+    connection_string = "1.2.3.4:5 -> 6.7.8.9:10"
+
+    shutdown_log =
+      capture_log(fn ->
+        assert {:stop, :normal, _} =
+                 Proxy.handle_info({:stale_timeout, state.socket}, %{
+                   state
+                   | partition_key: connection_string
+                 })
+      end)
+
+    assert shutdown_log =~ "Socket stale"
+    assert shutdown_log =~ inspect(connection_string)
   end
 
   test "logs messages", %{state: state} do
@@ -116,5 +170,21 @@ defmodule ProxyTest do
 
     assert proxy_log =~ "[info]  ocs_event raw=\"4994"
     assert proxy_log =~ "[info]  ocs_event raw=\"4995"
+  end
+
+  defmodule FakeRanch do
+    @spec handshake(reference()) :: {:ok, term()}
+    def handshake(ref) when is_reference(ref) do
+      {:ok, :handshake_socket}
+    end
+  end
+
+  defmodule FakeTransport do
+    @spec setopts(any(), Keyword.t()) :: :ok
+    def setopts(socket, opts) when is_list(opts) do
+      send(self(), {:setopts, socket, opts})
+
+      :ok
+    end
   end
 end
