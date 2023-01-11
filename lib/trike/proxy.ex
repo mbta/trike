@@ -37,24 +37,26 @@ defmodule Trike.Proxy do
 
   @impl :ranch_protocol
   def start_link(ref, transport, opts) do
+    opts = Keyword.take(opts, [:stream, :kinesis_client, :clock, :stale_timeout])
+
     GenServer.start_link(__MODULE__, {
       ref,
       transport,
-      opts[:stream],
-      opts[:kinesis_client],
-      opts[:clock]
+      opts
     })
   end
 
   @impl GenServer
-  def init({ref, transport, stream, kinesis_client, clock}) do
+  def init({ref, transport, opts}) do
     Process.flag(:trap_exit, true)
+
+    kinesis_client = opts[:kinesis_client]
 
     {:ok,
      %__MODULE__{
-       stream: stream,
+       stream: opts[:stream],
        put_record_fn: &kinesis_client.put_record/4,
-       clock: clock
+       clock: opts[:clock]
      }, {:continue, {:continue_init, ref, transport}}}
   end
 
