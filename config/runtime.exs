@@ -29,3 +29,11 @@ case Integer.parse(System.get_env("LISTEN_PORT", "")) do
   _ ->
     :ok
 end
+
+case Integer.parse(System.get_env("STALE_TIMEOUT_MS", "")) do
+  {timeout, ""} ->
+    config :trike, :stale_timeout_ms, timeout
+
+  _ ->
+    :ok
+end
