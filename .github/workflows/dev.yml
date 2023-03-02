@@ -31,7 +31,9 @@ jobs:
       task-cpu: 0.25
       task-memory: 512M
       task-port: 8001
-      update-order: start-first
+      update-order: stop-first
+      port-mode: host
+      placement-constraint: "node.hostname == HSCTDTST"
     secrets:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
