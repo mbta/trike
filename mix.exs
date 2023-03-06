@@ -31,17 +31,17 @@ defmodule Trike.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ranch, "~> 2.0"},
+      {:ranch, "~> 2.1"},
       {:ehmon, git: "https://github.com/mbta/ehmon.git"},
-      {:jason, "~> 1.2"},
+      {:jason, "~> 1.4"},
       {:tzdata, "~> 1.1"},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_kinesis, "~> 2.0"},
       {:configparser_ex, "~> 4.0", only: [:prod]},
-      {:req, "~> 0.3.1"},
-      {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
-      {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
+      {:req, "~> 0.3.6"},
+      {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
+      {:lcov_ex, "~> 0.3", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
 end
