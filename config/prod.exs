@@ -3,7 +3,7 @@ import Config
 config :trike,
   kinesis_client: Trike.KinesisClient
 
-config :logger, backends: [:console]
+config :logger, backends: [:console, Logger.Backend.Splunk, Sentry.LoggerBackend]
 
 config :logger, :console,
   format: "$dateT$time $metadata[$level] $message\n",
