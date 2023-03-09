@@ -35,7 +35,7 @@ defmodule Trike.MixProject do
       {:ehmon, git: "https://github.com/mbta/ehmon.git"},
       {:jason, "~> 1.2"},
       {:tzdata, "~> 1.1"},
-      {:ex_aws, "~> 2.2"},
+      {:ex_aws, "~> 2.4"},
       {:ex_aws_kinesis, "~> 2.0"},
       {:configparser_ex, "~> 4.0", only: [:prod]},
       {:req, "~> 0.3.1"},

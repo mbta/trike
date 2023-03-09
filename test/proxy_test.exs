@@ -168,8 +168,8 @@ defmodule ProxyTest do
 
     proxy_log = capture_log(fn -> Proxy.handle_info({:tcp, state.socket, data}, state) end)
 
-    assert proxy_log =~ "[info]  ocs_event raw=\"4994"
-    assert proxy_log =~ "[info]  ocs_event raw=\"4995"
+    assert proxy_log =~ "[info] ocs_event raw=\"4994"
+    assert proxy_log =~ "[info] ocs_event raw=\"4995"
   end
 
   defmodule FakeRanch do
