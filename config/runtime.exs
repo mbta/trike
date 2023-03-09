@@ -42,7 +42,7 @@ logger_backends =
   for {true, logger} <- [
         {true, :console},
         {sentry_dsn != "" and sentry_env != "", Sentry.LoggerBackend},
-        {splunk_token != "", Sentry.LoggerBackend}
+        {config_env() == :prod and splunk_token != "", Logger.Backend.Splunk}
       ],
       do: logger
 
