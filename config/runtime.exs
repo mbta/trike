@@ -4,8 +4,13 @@ kinesis_stream = System.get_env("KINESIS_STREAM", "console")
 splunk_token = System.get_env("TRIKE_SPLUNK_TOKEN", "")
 
 config :trike,
-  listen_port: System.get_env("LISTEN_PORT", "8001") |> String.to_integer(),
   kinesis_stream: kinesis_stream
+
+if kinesis_stream == "console" do
+  # use fake client if logging to the console
+  config :trike,
+    kinesis_client: Fakes.FakeKinesisClient
+end
 
 if config_env() == :prod and splunk_token != "" do
   config :logger, backends: [Logger.Backend.Splunk, :console]
@@ -17,8 +22,18 @@ if config_env() == :prod and splunk_token != "" do
     token: splunk_token
 end
 
-if kinesis_stream == "console" do
-  # use fake client if logging to the console
-  config :trike,
-    kinesis_client: Fakes.FakeKinesisClient
+case Integer.parse(System.get_env("LISTEN_PORT", "")) do
+  {listen_port, ""} ->
+    config :trike, :listen_port, listen_port
+
+  _ ->
+    :ok
+end
+
+case Integer.parse(System.get_env("STALE_TIMEOUT_MS", "")) do
+  {timeout, ""} ->
+    config :trike, :stale_timeout_ms, timeout
+
+  _ ->
+    :ok
 end

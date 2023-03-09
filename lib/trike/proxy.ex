@@ -18,9 +18,12 @@ defmodule Trike.Proxy do
           partition_key: String.t() | nil,
           buffer: binary(),
           last_sequence_number: String.t() | nil,
+          stale_timeout_ms: non_neg_integer(),
+          stale_timeout_ref: reference() | nil,
           put_record_fn:
             (Kinesis.stream_name(), binary(), binary() -> {:ok, term()} | {:error, term()}),
-          clock: module()
+          clock: module(),
+          ranch: module()
         }
 
   @enforce_keys [:stream, :put_record_fn, :clock]
@@ -29,7 +32,10 @@ defmodule Trike.Proxy do
                 :transport,
                 :socket,
                 :partition_key,
+                :stale_timeout_ref,
+                :stale_timeout_ms,
                 buffer: "",
+                ranch: :ranch,
                 last_sequence_number: nil
               ]
 
@@ -37,43 +43,45 @@ defmodule Trike.Proxy do
 
   @impl :ranch_protocol
   def start_link(ref, transport, opts) do
+    opts = Keyword.take(opts, [:stream, :kinesis_client, :clock, :stale_timeout_ms])
+
     GenServer.start_link(__MODULE__, {
       ref,
       transport,
-      opts[:stream],
-      opts[:kinesis_client],
-      opts[:clock]
+      opts
     })
   end
 
   @impl GenServer
-  def init({ref, transport, stream, kinesis_client, clock}) do
+  def init({ref, transport, opts}) do
     Process.flag(:trap_exit, true)
+
+    kinesis_client = opts[:kinesis_client]
 
     {:ok,
      %__MODULE__{
-       stream: stream,
+       transport: transport,
+       stream: opts[:stream],
        put_record_fn: &kinesis_client.put_record/4,
-       clock: clock
-     }, {:continue, {:continue_init, ref, transport}}}
+       stale_timeout_ms:
+         Keyword.get(opts, :state_timeout_ms, Application.get_env(:trike, :stale_timeout_ms)),
+       clock: opts[:clock]
+     }, {:continue, {:continue_init, ref}}}
   end
 
   @impl GenServer
-  def handle_continue({:continue_init, ref, transport}, state) do
-    {:ok, socket} = :ranch.handshake(ref)
+  def handle_continue({:continue_init, ref}, state) do
+    {:ok, socket} = state.ranch.handshake(ref)
     Logger.metadata(socket: inspect(socket))
-    :ok = transport.setopts(socket, active: :once, buffer: 131_072)
+    :ok = state.transport.setopts(socket, active: :once, buffer: 131_072, keepalive: true)
     connection_string = format_socket(socket)
 
     Logger.info("Accepted socket: conn=#{inspect(connection_string)}")
 
-    {:noreply,
-     %{
-       state
-       | transport: transport,
-         socket: socket,
-         partition_key: connection_string
-     }}
+    state = %{state | socket: socket, partition_key: connection_string}
+    state = schedule_stale_timeout(state)
+
+    {:noreply, state}
   end
 
   @impl GenServer
@@ -84,6 +92,8 @@ defmodule Trike.Proxy do
         } = state
       ) do
     {:ok, buffer, sequence_number} = handle_data(state, data)
+
+    state = schedule_stale_timeout(state)
 
     state.transport.setopts(socket, active: :once)
 
@@ -97,6 +107,14 @@ defmodule Trike.Proxy do
 
   def handle_info({:tcp_closed, socket}, %{socket: socket} = state) do
     Logger.info("Socket closed conn=#{inspect(state.partition_key)}")
+    {:stop, :normal, state}
+  end
+
+  def handle_info({:stale_timeout, socket}, %{socket: socket} = state) do
+    Logger.info(
+      "Socket stale, closing conn=#{inspect(state.partition_key)} stale_timeout_ms=#{state.stale_timeout_ms}"
+    )
+
     {:stop, :normal, state}
   end
 
@@ -181,11 +199,24 @@ defmodule Trike.Proxy do
 
   @spec format_socket(:gen_tcp.socket()) :: String.t()
   defp format_socket(sock) do
-    with {:ok, {local_ip, local_port}} <- :inet.sockname(sock),
+    with sock when is_port(sock) <- sock,
+         {:ok, {local_ip, local_port}} <- :inet.sockname(sock),
          {:ok, {peer_ip, peer_port}} <- :inet.peername(sock) do
       "{#{:inet.ntoa(local_ip)}:#{local_port} -> #{:inet.ntoa(peer_ip)}:#{peer_port}}"
     else
       unexpected -> inspect(unexpected)
     end
+  end
+
+  @spec schedule_stale_timeout(t()) :: t()
+  defp schedule_stale_timeout(%{stale_timeout_ref: nil} = state) do
+    ref = Process.send_after(self(), {:stale_timeout, state.socket}, state.stale_timeout_ms)
+    %{state | stale_timeout_ref: ref}
+  end
+
+  defp schedule_stale_timeout(state) do
+    # already scheduled, cancel and reschedule
+    Process.cancel_timer(state.stale_timeout_ref)
+    schedule_stale_timeout(%{state | stale_timeout_ref: nil})
   end
 end
