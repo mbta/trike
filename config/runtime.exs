@@ -15,8 +15,6 @@ if kinesis_stream == "console" do
 end
 
 if config_env() == :prod and splunk_token != "" do
-  config :logger, backends: [Sentry.LoggerBackend, Logger.Backend.Splunk, :console]
-
   config :logger, Logger.Backend.Splunk,
     host: "https://http-inputs-mbta.splunkcloud.com/services/collector/event",
     format: "$dateT$time $metadata[$level] node=$node $message\n",
@@ -39,6 +37,16 @@ if sentry_dsn != "" and sentry_env != "" do
     level: :error,
     capture_log_messages: true
 end
+
+logger_backends =
+  for {true, logger} <- [
+        {true, :console},
+        {sentry_dsn != "" and sentry_env != "", Sentry.LoggerBackend},
+        {splunk_token != "", Sentry.LoggerBackend}
+      ],
+      do: logger
+
+config :logger, backends: logger_backends
 
 case Integer.parse(System.get_env("LISTEN_PORT", "")) do
   {listen_port, ""} ->
