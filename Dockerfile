@@ -1,5 +1,5 @@
-ARG ELIXIR_VERSION=1.12.3
-ARG ERLANG_VERSION=22.3
+ARG ELIXIR_VERSION=1.14.3
+ARG ERLANG_VERSION=25.2.1
 ARG WINDOWS_VERSION=1809
 # See also: ERTS_VERSION in the from image below
 
@@ -30,7 +30,7 @@ COPY config/runtime.exs config\\runtime.exs
 RUN mix release
 
 FROM $FROM_IMAGE
-ARG ERTS_VERSION=10.7
+ARG ERTS_VERSION=13.1.4
 
 USER ContainerAdministrator
 
