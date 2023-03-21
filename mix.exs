@@ -41,7 +41,8 @@ defmodule Trike.MixProject do
       {:req, "~> 0.3.6"},
       {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
       {:lcov_ex, "~> 0.3", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:sentry, "~> 8.0"}
     ]
   end
 end
