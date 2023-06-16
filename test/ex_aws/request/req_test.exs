@@ -16,5 +16,11 @@ defmodule ExAws.Request.ReqTest do
 
       assert %{status_code: 200} = result
     end
+
+    test "does not return parsed JSON" do
+      {:ok, result} = request(:get, "https://cdn.mbta.com/realtime/Alerts.json", "", [])
+
+      assert %{body: <<_::binary>>} = result
+    end
   end
 end
