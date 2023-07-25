@@ -115,6 +115,8 @@ defmodule Trike.Proxy do
       "Socket stale, closing conn=#{inspect(state.partition_key)} stale_timeout_ms=#{state.stale_timeout_ms}"
     )
 
+    state.transport.close(state.socket)
+
     {:stop, :normal, state}
   end
 
