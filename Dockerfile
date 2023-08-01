@@ -1,56 +1,50 @@
 ARG ELIXIR_VERSION=1.14.3
 ARG ERLANG_VERSION=25.2.1
-ARG WINDOWS_VERSION=1809
-# See also: ERTS_VERSION in the from image below
+ARG ALPINE_VERSION=3.18.0
 
-ARG BUILD_IMAGE=mbtatools/windows-elixir:$ELIXIR_VERSION-erlang-$ERLANG_VERSION-windows-$WINDOWS_VERSION
-ARG FROM_IMAGE=mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION
-
-FROM $BUILD_IMAGE as build
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION} as build
 
 ENV MIX_ENV=prod
 
-# log which version of Windows we're using
-RUN ver
+RUN mkdir /trike
 
-RUN mkdir C:\trike
+WORKDIR /trike
 
-WORKDIR C:\\trike
+RUN apk add --no-cache git
+RUN mix local.hex --force && mix local.rebar --force
 
 COPY mix.exs mix.lock ./
 RUN mix deps.get
 
-COPY config/config.exs config\\config.exs
-COPY config/prod.exs config\\prod.exs
+COPY config/config.exs config/config.exs
+COPY config/prod.exs config/prod.exs
 
 RUN mix deps.compile
 
 COPY lib lib
-COPY config/runtime.exs config\\runtime.exs
-RUN mix release
+COPY config/runtime.exs config/runtime.exs
+RUN mix release linux
 
-FROM $FROM_IMAGE
-ARG ERTS_VERSION=13.1.4
+# The one the elixir image was built with
+FROM alpine:${ALPINE_VERSION}
 
-USER ContainerAdministrator
+RUN apk add --no-cache libssl1.1 dumb-init libstdc++ libgcc ncurses-libs && \
+    mkdir /work /trike && \
+    adduser -D trike && chown trike /work
 
-# From https://github.com/moby/moby/issues/25982, set some registry values to
-# allow the container time to gracefully shut down
+COPY --from=build /trike/_build/prod/rel/linux /trike
 
-RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 30 && \
-    reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 30000 /f
+# Allow Trike to update the Timezone data
+RUN chown trike /trike/lib/tzdata-*/priv /trike/lib/tzdata*/priv/*
 
-COPY --from=build C:\\Erlang\\vcredist_x64.exe vcredist_x64.exe
-RUN .\vcredist_x64.exe /install /quiet /norestart \
-    && del vcredist_x64.exe
+# Set exposed ports
+ENV MIX_ENV=prod TERM=xterm LANG=C.UTF-8 \
+    ERL_CRASH_DUMP_SECONDS=0 RELEASE_TMP=/work
 
-COPY --from=build C:\\trike\\_build\\prod\\rel\\trike C:\\trike
+USER trike
+WORKDIR /work
 
-WORKDIR C:\\trike
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-# Ensure Erlang can run
-RUN dir && \
-    erts-%ERTS_VERSION%\bin\erl -noshell -noinput +V
-
-EXPOSE 8001
-CMD ["C:\\trike\\bin\\trike.bat", "start"]
+HEALTHCHECK CMD ["/trike/bin/linux", "rpc", "1 + 1"]
+CMD ["/trike/bin/linux", "start"]
