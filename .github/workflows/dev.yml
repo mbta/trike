@@ -3,7 +3,9 @@ name: Deploy to Dev (ECS)
 on:
   workflow_dispatch:
   push:
-    branches: [ps-linux]
+    branches: [main, ps-linux]
+  schedule:
+    - cron: "0 5 * * *"
 
 jobs:
   deploy:
