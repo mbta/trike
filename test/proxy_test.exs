@@ -186,5 +186,8 @@ defmodule ProxyTest do
 
       :ok
     end
+
+    @spec close(socket :: :gen_tcp.socket()) :: :ok
+    def close(_socket), do: :ok
   end
 end
