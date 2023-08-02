@@ -3,10 +3,11 @@ import Config
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 config :ex_aws,
-  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, {:awscli, "default", 30}],
+  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, {:awscli, "default", 30}, :instance_role],
   secret_access_key: [
     {:system, "AWS_SECRET_ACCESS_KEY"},
-    {:awscli, "default", 30}
+    {:awscli, "default", 30},
+    :instance_role
   ],
   http_client: ExAws.Request.Req,
   json_codec: Jason

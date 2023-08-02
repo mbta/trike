@@ -5,12 +5,20 @@ defmodule ExAws.Request.Req do
   @behaviour ExAws.Request.HttpClient
 
   @default_opts [
-    connect_options: [protocol: :http2]
+    raw: true
   ]
 
   @impl ExAws.Request.HttpClient
   def request(method, url, body, headers, http_opts \\ []) do
-    http_opts = Keyword.merge(@default_opts, http_opts)
+    # ex_aws/lib/ex_aws/instance_meta.ex uses the `follow_redirect` keyword, but
+    # with Req it's `follow_redirects`
+    {follow_redirect, http_opts} = Keyword.pop(http_opts, :follow_redirect, false)
+
+    http_opts =
+      @default_opts
+      |> Keyword.merge(http_opts)
+      |> Keyword.put(:follow_redirects, follow_redirect)
+
     req = Req.new(http_opts)
 
     case Req.request(req,

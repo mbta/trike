@@ -10,7 +10,13 @@ defmodule Trike.MixProject do
       deps: deps(),
       test_coverage: [tool: LcovEx, output: "cover"],
       aliases: aliases(),
-      dialyzer: [plt_add_apps: [:mix]]
+      dialyzer: [plt_add_apps: [:mix]],
+      default_release: :trike,
+      releases: [
+        linux: [
+          include_executables_for: [:unix]
+        ]
+      ]
     ]
   end
 
