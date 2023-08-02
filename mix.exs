@@ -13,9 +13,6 @@ defmodule Trike.MixProject do
       dialyzer: [plt_add_apps: [:mix]],
       default_release: :trike,
       releases: [
-        trike: [
-          include_executables_for: [:windows]
-        ],
         linux: [
           include_executables_for: [:unix]
         ]
