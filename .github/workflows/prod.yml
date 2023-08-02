@@ -2,8 +2,6 @@ name: Deploy to Prod (ECS)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ps-linux]
 
 jobs:
   deploy:
