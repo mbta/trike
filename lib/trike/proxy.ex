@@ -246,7 +246,7 @@ defmodule Trike.Proxy do
     schedule_stale_timeout(%{state | stale_timeout_ref: nil})
   end
 
-  defp get_eastern_tz_date() do
+  defp get_eastern_tz_date do
     {:ok, current_datetime} = DateTime.now("America/New_York")
     DateTime.to_date(current_datetime)
   end
