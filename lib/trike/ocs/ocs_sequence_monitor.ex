@@ -39,7 +39,7 @@ defmodule Trike.OCS.SequenceMonitor do
 
     if first_sequence_number != "" and last_sequence_number != "" do
       Logger.info(
-        "ocs_sequence_monitor event=update peer_ip=#{peer_ip} first_sequence_number=#{first_sequence_number} last_sequence_number=#{first_sequence_number}"
+        "ocs_sequence_monitor event=update peer_ip=#{peer_ip} first_sequence_number=#{first_sequence_number} last_sequence_number=#{last_sequence_number}"
       )
 
       ocs_sequence_by_ip =
