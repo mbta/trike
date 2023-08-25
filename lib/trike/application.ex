@@ -28,7 +28,8 @@ defmodule Trike.Application do
         kinesis_client: kinesis_client,
         clock: Application.get_env(:trike, :clock)
       ),
-      {Trike.HealthChecker, [ranch_ref: listener_ref]}
+      {Trike.HealthChecker, [ranch_ref: listener_ref]},
+      {Trike.OCS.SequenceMonitor, [name: :sequence_mon]}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)

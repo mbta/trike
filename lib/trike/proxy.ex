@@ -91,7 +91,20 @@ defmodule Trike.Proxy do
           socket: socket
         } = state
       ) do
-    {:ok, buffer, sequence_number} = handle_data(state, data)
+    {:ok, buffer, sequence_number, first_ocs_sequence_number, last_ocs_sequence_number, date} =
+      handle_data(state, data)
+
+    with socket when is_port(socket) <- socket,
+         {:ok, {peer_ip, _peer_port}} <- :inet.peername(socket) do
+      peer_ip_serialized = Enum.join(Tuple.to_list(peer_ip), ".")
+
+      Kernel.send(
+        :ocs_sequence_monitor,
+        {:update, peer_ip_serialized, first_ocs_sequence_number, last_ocs_sequence_number, date}
+      )
+    else
+      unexpected -> inspect(unexpected)
+    end
 
     state = schedule_stale_timeout(state)
 
@@ -132,7 +145,8 @@ defmodule Trike.Proxy do
     {:ok, state}
   end
 
-  @spec handle_data(t(), binary()) :: {:ok, binary(), String.t()}
+  @spec handle_data(t(), binary()) ::
+          {:ok, binary(), String.t(), String.t(), String.t(), Date.t()}
   defp handle_data(state, data) do
     %{
       buffer: buffer,
@@ -154,7 +168,7 @@ defmodule Trike.Proxy do
 
     result =
       if records == [] do
-        {:ok, rest, last_sequence_number}
+        {:ok, rest, last_sequence_number, "", "", Date.utc_today()}
       else
         records_length = length(records)
         encoded = Jason.encode!(records)
@@ -179,16 +193,26 @@ defmodule Trike.Proxy do
           &Logger.info("ocs_event raw=#{inspect(&1.data.raw)} time=#{inspect(&1.time)}")
         )
 
+        # Grab our first and last OCS sequence numbers:
+        first_ocs_message = Enum.at(records, 0)
+        first_ocs_sequence_number = first_ocs_message.data.raw |> String.split(",") |> Enum.at(0)
+        last_ocs_message = Enum.at(records, -1)
+        last_ocs_sequence_number = last_ocs_message.data.raw |> String.split(",") |> Enum.at(0)
+
+        # Confirm with FF that he uses UTC:
+        current_date = Date.utc_today()
+
         Logger.info(
           "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
         )
 
         {:ok, %{"SequenceNumber" => last_sequence_number}} = result
-        {:ok, rest, last_sequence_number}
+
+        {:ok, rest, last_sequence_number, first_ocs_sequence_number, last_ocs_sequence_number,
+         current_date}
       end
 
     Logger.metadata(request_id: nil)
-
     result
   end
 
