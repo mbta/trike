@@ -25,7 +25,7 @@ defmodule Trike.OCS.SequenceMonitor do
         if String.to_integer(old_last_sequence_number) + 1 !=
              String.to_integer(first_sequence_number) do
           Logger.warn(
-            "ocs_sequence_monitor event=missing_sequence peer_ip=#{peer_ip} first_sequence_number=#{first_sequence_number} last_sequence_number=#{last_sequence_number} peer_ip=#{peer_ip} old_first_sequence_number=#{old_first_sequence_number} old_last_sequence_number=#{old_last_sequence_number}"
+            "ocs_sequence_monitor event=missing_sequence peer_ip=#{peer_ip} date=#{date} old_date=#{old_date} first_sequence_number=#{first_sequence_number} last_sequence_number=#{last_sequence_number} peer_ip=#{peer_ip} old_first_sequence_number=#{old_first_sequence_number} old_last_sequence_number=#{old_last_sequence_number}"
           )
         end
       end

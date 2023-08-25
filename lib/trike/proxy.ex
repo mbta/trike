@@ -168,7 +168,7 @@ defmodule Trike.Proxy do
 
     result =
       if records == [] do
-        {:ok, rest, last_sequence_number, "", "", Date.utc_today()}
+        {:ok, rest, last_sequence_number, "", "", get_eastern_tz_date()}
       else
         records_length = length(records)
         encoded = Jason.encode!(records)
@@ -199,8 +199,8 @@ defmodule Trike.Proxy do
         last_ocs_message = Enum.at(records, -1)
         last_ocs_sequence_number = last_ocs_message.data.raw |> String.split(",") |> Enum.at(0)
 
-        # Confirm with FF that he uses UTC:
-        current_date = Date.utc_today()
+        # Get current date, in Eastern timezone:
+        current_date = get_eastern_tz_date()
 
         Logger.info(
           "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
@@ -244,5 +244,10 @@ defmodule Trike.Proxy do
     # already scheduled, cancel and reschedule
     Process.cancel_timer(state.stale_timeout_ref)
     schedule_stale_timeout(%{state | stale_timeout_ref: nil})
+  end
+
+  defp get_eastern_tz_date() do
+    {:ok, current_datetime} = DateTime.now("America/New_York")
+    DateTime.to_date(current_datetime)
   end
 end
