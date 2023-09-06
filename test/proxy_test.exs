@@ -62,7 +62,7 @@ defmodule ProxyTest do
     Proxy.handle_info({:tcp, state.socket, data}, state)
 
     event =
-      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"}])
+      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"}])
 
     assert_received({:put_record, "test_stream", "test_key", ^event, []})
     assert_received({:setopts, :socket, active: :once})
@@ -74,7 +74,7 @@ defmodule ProxyTest do
     Proxy.handle_info({:tcp, :socket, data}, state)
 
     event =
-      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"},{\"data\":{\"raw\":\"4995,TSCH,03:00:06,R,RLD,W\"},\"id\":\"O7ODUPlPMM089UZL1YLYpFIZzeo=\",\"partitionkey\":\"test_key\",\"source\":\"#{:inet.gethostname() |> elem(1)}.mbta.com/trike\",\"sourceip\":\"\",\"specversion\":\"1.0\",\"time\":\"2021-08-13T12:00:00Z\",\"type\":\"com.mbta.ocs.raw_message\"}])
+      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"},{\"data\":{\"raw\":\"4995,TSCH,03:00:06,R,RLD,W\"},\"id\":\"O7ODUPlPMM089UZL1YLYpFIZzeo=\",\"partitionkey\":\"test_key\",\"source\":\"opstech3.mbta.com/trike\",\"specversion\":\"1.0\",\"time\":\"2021-08-13T12:00:00Z\",\"type\":\"com.mbta.ocs.raw_message\"}])
 
     assert_received({:put_record, "test_stream", "test_key", ^event, []})
     assert_received({:setopts, :socket, active: :once})
@@ -101,7 +101,7 @@ defmodule ProxyTest do
     {:noreply, %{buffer: buffer}} = Proxy.handle_info({:tcp, :socket, data}, state)
 
     event =
-      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"}])
+      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"opstech3.mbta.com/trike","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"}])
 
     assert_received({:put_record, "test_stream", "test_key", ^event, []})
 
