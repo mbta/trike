@@ -148,17 +148,9 @@ defmodule Trike.Proxy do
     Logger.info("got_data size=#{byte_size(data)} buf_size=#{byte_size(buffer)}")
     {messages, rest} = extract(buffer <> data)
 
-    source_ip =
-      if is_port(state.socket) do
-        {:ok, {peer_ip, _peer_port}} = :inet.peername(state.socket)
-        Enum.join(Tuple.to_list(peer_ip), ".")
-      else
-        ""
-      end
-
     records =
       messages
-      |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key, source_ip))
+      |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key))
 
     result =
       if records == [] do
@@ -184,9 +176,7 @@ defmodule Trike.Proxy do
 
         Enum.each(
           records,
-          &Logger.info(
-            "ocs_event raw=#{inspect(&1.data.raw)} time=#{inspect(&1.time)} sourceip=#{inspect(&1.sourceip)}"
-          )
+          &Logger.info("ocs_event raw=#{inspect(&1.data.raw)} time=#{inspect(&1.time)}")
         )
 
         Logger.info(
