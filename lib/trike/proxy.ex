@@ -73,7 +73,15 @@ defmodule Trike.Proxy do
   def handle_continue({:continue_init, ref}, state) do
     {:ok, socket} = state.ranch.handshake(ref)
     Logger.metadata(socket: inspect(socket))
-    :ok = state.transport.setopts(socket, active: :once, buffer: 131_072, keepalive: true)
+
+    :ok =
+      state.transport.setopts(socket,
+        active: :once,
+        buffer: 131_072,
+        keepalive: true,
+        linger: {true, 0}
+      )
+
     connection_string = format_socket(socket)
 
     Logger.info("Accepted socket: conn=#{inspect(connection_string)}")
@@ -115,8 +123,6 @@ defmodule Trike.Proxy do
       "Socket stale, closing conn=#{inspect(state.partition_key)} stale_timeout_ms=#{state.stale_timeout_ms}"
     )
 
-    state.transport.close(state.socket)
-
     {:stop, :normal, state}
   end
 
@@ -127,8 +133,7 @@ defmodule Trike.Proxy do
 
   @impl GenServer
   def terminate(_reason, state) do
-    Logger.info("Terminating")
-    state.transport.close(state.socket)
+    Logger.info("Terminating conn=#{inspect(state.partition_key)}")
     {:ok, state}
   end
 

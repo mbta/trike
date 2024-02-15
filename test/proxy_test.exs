@@ -42,7 +42,9 @@ defmodule ProxyTest do
       ref = make_ref()
       {:noreply, state} = Proxy.handle_continue({:continue_init, ref}, state)
       socket = state.socket
-      assert_receive {:setopts, ^socket, [active: :once, buffer: _, keepalive: true]}
+
+      assert_receive {:setopts, ^socket,
+                      [active: :once, buffer: _, keepalive: true, linger: {true, 0}]}
     end
 
     test "starts a timer for stale messages", %{state: state} do
