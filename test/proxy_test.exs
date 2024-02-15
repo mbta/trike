@@ -133,6 +133,17 @@ defmodule ProxyTest do
     refute new_state.stale_timeout_ref == state.stale_timeout_ref
   end
 
+  test "does not send a heartbeat message to Kinesis", %{state: state} do
+    heartbeat = Application.get_env(:trike, :heartbeat_packet)
+    data = "#{heartbeat}#{@eot}"
+
+    {:noreply, new_state} = Proxy.handle_info({:tcp, state.socket, data}, state)
+
+    refute_received({:put_record, "test_stream", "test_key", _, _})
+    assert_received({:setopts, :socket, active: :once})
+    refute new_state.stale_timeout_ref == state.stale_timeout_ref
+  end
+
   test "logs connection string on shutdown", %{state: state} do
     connection_string = "1.2.3.4:5 -> 6.7.8.9:10"
 
