@@ -16,10 +16,10 @@ defmodule Mix.Tasks.FakeSource do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        strict: [{:"trike-port", :integer}, host: :string, bad: :boolean, good: :boolean]
+        strict: [{:port, :integer}, host: :string, bad: :boolean, good: :boolean]
       )
 
-    port = opts[:"trike-port"] || 8001
+    port = opts[:port] || 8001
     bad = opts[:bad]
     good = opts[:good]
     host = String.to_charlist(opts[:host] || "localhost")
@@ -34,7 +34,7 @@ defmodule Mix.Tasks.FakeSource do
         {:ok, sock}
 
       {:error, err} ->
-        Logger.info("Couldn't connect: #{err}, trying again shortly")
+        Logger.info("Couldn't connect to #{host}:#{port}: #{err}, trying again shortly")
         :timer.sleep(2_000)
         do_connect(host, port)
     end
