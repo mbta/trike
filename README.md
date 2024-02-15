@@ -18,7 +18,7 @@ Trike is a simple application in the spirit of [socket_proxy](https://github.com
 Trike comes with a small tool, `fake_source`, for feeding it data over TCP for testing purposes. To use the tool:
 - Ensure the application is running: `mix run --no-halt`
 - Open a new terminal in the repository root
-- Run the tool: `mix fake_source [--trike-port port_number] [--good] [--bad]`
+- Run the tool: `mix fake_source [--port port_number] [--good] [--bad]`
   - By default, the tool assumes Trike is running on port 8001
   - The `--good` option will send Trike canned OCS messages from `priv/ocs_data.csv`
   - The `--bad` option will send Trike random bytes of data
