@@ -162,8 +162,10 @@ defmodule Trike.Proxy do
       end
 
     records =
-      messages
-      |> Enum.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key, source_ip))
+      for message <- messages,
+          not_ignored?(message) do
+        CloudEvent.from_ocs_message(message, current_time, partition_key, source_ip)
+      end
 
     result =
       if records == [] do
@@ -236,4 +238,8 @@ defmodule Trike.Proxy do
     Process.cancel_timer(state.stale_timeout_ref)
     schedule_stale_timeout(%{state | stale_timeout_ref: nil})
   end
+
+  @heartbeat Application.compile_env(:trike, :heartbeat_packet)
+  defp not_ignored?(@heartbeat), do: false
+  defp not_ignored?(message) when is_binary(message), do: true
 end
