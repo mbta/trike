@@ -6,11 +6,12 @@ defmodule Trike.CloudEvent.TschTagV1 do
     """
     @type t() :: %__MODULE__{
             carNumber: String.t(),
+            carNumberDisplay: String.t(),
             tag: String.t()
           }
 
     @derive Jason.Encoder
-    @enforce_keys [:carNumber, :tag]
+    @enforce_keys [:carNumber, :carNumberDisplay, :tag]
     defstruct @enforce_keys
   end
 
@@ -52,6 +53,7 @@ defmodule Trike.CloudEvent.TschTagV1 do
           fn car_tag ->
             %CarTag{
               carNumber: car_tag.car_number,
+              carNumberDisplay: car_tag.car_number_display,
               tag: car_tag.tag
             }
           end

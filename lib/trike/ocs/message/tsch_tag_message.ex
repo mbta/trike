@@ -17,10 +17,11 @@ defmodule OCS.Message.TschTagMessage do
 end
 
 defmodule OCS.Message.TschTagMessage.CarTag do
-  defstruct [:car_number, :tag]
+  defstruct [:car_number, :car_number_display, :tag]
 
   @type t :: %__MODULE__{
           car_number: String.t(),
+          car_number_display: String.t(),
           tag: String.t()
         }
 end

@@ -190,7 +190,8 @@ defmodule OCS.Parser.TschMessage do
         |> Stream.reject(fn {tag, _} -> tag == " " end)
         |> Enum.map(fn {tag, car_id} ->
           %OCS.Message.TschTagMessage.CarTag{
-            car_number: OCS.Parser.convert_ocs_car_number(transitline, car_id),
+            car_number: car_id,
+            car_number_display: OCS.Parser.convert_ocs_car_number(transitline, car_id),
             tag: tag
           }
         end)
