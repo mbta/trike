@@ -10,6 +10,6 @@ defmodule OCS.Message.TschLnkMessage do
           transitline: String.t() | nil,
           trip_uid: String.t(),
           prev_trip_uid: String.t() | nil,
-          next_trip_uid: String.t()
+          next_trip_uid: String.t() | nil
         }
 end
