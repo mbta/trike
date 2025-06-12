@@ -186,10 +186,13 @@ defmodule OCS.Parser.TschMessage do
       trip_uid: trip_uid,
       consist_tags: OCS.Message.DispatchTag.parse_tags(consist_tags),
       car_tags:
-        Enum.map(car_tags, fn tag_str ->
-          {tag, car_id} = String.split_at(tag_str, 1)
-          tag = if tag != " ", do: tag, else: nil
-          {OCS.Parser.convert_ocs_car_number(transitline, car_id), tag}
+        Stream.map(car_tags, &String.split_at(&1, 1))
+        |> Stream.reject(fn {tag, _} -> tag == " " end)
+        |> Enum.map(fn {tag, car_id} ->
+          %OCS.Message.TschTagMessage.CarTag{
+            car_number: OCS.Parser.convert_ocs_car_number(transitline, car_id),
+            tag: tag
+          }
         end)
     }
   end
