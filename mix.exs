@@ -48,7 +48,9 @@ defmodule Trike.MixProject do
       {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
       {:lcov_ex, "~> 0.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:sentry, "~> 8.0"}
+      {:sentry, "~> 8.0"},
+      {:fast_local_datetime, "~> 1.0.0"},
+      {:timex, "~> 3.7.9"}
     ]
   end
 end
