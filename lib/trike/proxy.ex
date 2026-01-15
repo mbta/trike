@@ -162,10 +162,9 @@ defmodule Trike.Proxy do
       end
 
     records =
-      for message <- messages,
-          not_ignored?(message) do
-        CloudEvent.from_ocs_message(message, current_time, partition_key, source_ip)
-      end
+      Stream.filter(messages, &not_ignored?/1)
+      |> Stream.map(&CloudEvent.from_ocs_message(&1, current_time, partition_key, source_ip))
+      |> Enum.concat()
 
     result =
       if records == [] do
@@ -189,12 +188,14 @@ defmodule Trike.Proxy do
             opts
           ])
 
-        Enum.each(
-          records,
-          &Logger.info(
-            "ocs_event raw=#{inspect(&1.data.raw)} time=#{inspect(&1.time)} sourceip=#{inspect(&1.sourceip)}"
-          )
-        )
+        # Log contents of only raw messages
+        for record <- records do
+          with %{raw: raw} <- record.data do
+            Logger.info(
+              "ocs_event raw=#{inspect(raw)} time=#{inspect(record.time)} sourceip=#{inspect(record.sourceip)}"
+            )
+          end
+        end
 
         Logger.info(
           "put_record_timing stream=#{stream} pkey=#{inspect(partition_key)} length=#{records_length} size=#{byte_size(encoded)} msec=#{div(usec, 1000)} result=#{result_key}"
