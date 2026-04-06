@@ -63,8 +63,13 @@ defmodule ProxyTest do
 
     Proxy.handle_info({:tcp, state.socket, data}, state)
 
-    event =
-      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"}])
+    raw =
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
+
+    parsed =
+      ~s({"data":{"counter":4994,"timestamp":"2021-08-13T02:00:06Z","transitLine":"R"},"id":"PI/tYKeSbj90St8HD7dre2b8sHg=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.tsch_rld.v1"})
+
+    event = ~s([#{raw},#{parsed}])
 
     assert_received({:put_record, "test_stream", "test_key", ^event, []})
     assert_received({:setopts, :socket, active: :once})
@@ -75,8 +80,19 @@ defmodule ProxyTest do
 
     Proxy.handle_info({:tcp, :socket, data}, state)
 
-    event =
-      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"},{\"data\":{\"raw\":\"4995,TSCH,03:00:06,R,RLD,W\"},\"id\":\"O7ODUPlPMM089UZL1YLYpFIZzeo=\",\"partitionkey\":\"test_key\",\"source\":\"#{:inet.gethostname() |> elem(1)}.mbta.com/trike\",\"sourceip\":\"\",\"specversion\":\"1.0\",\"time\":\"2021-08-13T12:00:00Z\",\"type\":\"com.mbta.ocs.raw_message\"}])
+    raw1 =
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
+
+    parsed1 =
+      ~s({"data":{"counter":4994,"timestamp":"2021-08-13T02:00:06Z","transitLine":"R"},"id":"PI/tYKeSbj90St8HD7dre2b8sHg=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.tsch_rld.v1"})
+
+    raw2 =
+      ~s({"data":{"raw":"4995,TSCH,03:00:06,R,RLD,W"},"id":"O7ODUPlPMM089UZL1YLYpFIZzeo=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
+
+    parsed2 =
+      ~s({"data":{"counter":4995,"timestamp":"2021-08-13T03:00:06Z","transitLine":"R"},"id":"Uvc9F0Hiu5P6kikbKRXz4ZzPjsI=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.tsch_rld.v1"})
+
+    event = ~s([#{raw1},#{parsed1},#{raw2},#{parsed2}])
 
     assert_received({:put_record, "test_stream", "test_key", ^event, []})
     assert_received({:setopts, :socket, active: :once})
@@ -102,8 +118,13 @@ defmodule ProxyTest do
 
     {:noreply, %{buffer: buffer}} = Proxy.handle_info({:tcp, :socket, data}, state)
 
-    event =
-      ~s([{"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"}])
+    raw =
+      ~s({"data":{"raw":"4994,TSCH,02:00:06,R,RLD,W"},"id":"myH7tTFo1tuZdSXxQ/5QFA4Xx58=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.raw_message"})
+
+    parsed =
+      ~s({"data":{"counter":4994,"timestamp":"2021-08-13T02:00:06Z","transitLine":"R"},"id":"PI/tYKeSbj90St8HD7dre2b8sHg=","partitionkey":"test_key","source":"#{:inet.gethostname() |> elem(1)}.mbta.com/trike","sourceip":"","specversion":"1.0","time":"2021-08-13T12:00:00Z","type":"com.mbta.ocs.tsch_rld.v1"})
+
+    event = ~s([#{raw},#{parsed}])
 
     assert_received({:put_record, "test_stream", "test_key", ^event, []})
 
