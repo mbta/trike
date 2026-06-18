@@ -18,6 +18,7 @@ config :trike,
   clock: DateTime,
   stale_timeout_ms: 5 * 60 * 1_000,
   health_check_interval_ms: 60 * 1_000,
-  heartbeat_packet: "HEARTBEAT"
+  heartbeat_packet: "HEARTBEAT",
+  is_prod?: false
 
 import_config "#{config_env()}.exs"

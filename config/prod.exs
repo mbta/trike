@@ -1,9 +1,8 @@
 import Config
 
 config :trike,
-  kinesis_client: Trike.KinesisClient
-
-config :logger, backends: [:console]
+  kinesis_client: Trike.KinesisClient,
+  is_prod?: true
 
 config :logger, :console,
   format: "$dateT$time $metadata[$level] $message\n",

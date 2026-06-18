@@ -38,16 +38,6 @@ if sentry_dsn != "" and sentry_env != "" do
     capture_log_messages: true
 end
 
-logger_backends =
-  for {true, logger} <- [
-        {true, :console},
-        {sentry_dsn != "" and sentry_env != "", Sentry.LoggerBackend},
-        {config_env() == :prod and splunk_token != "", Logger.Backend.Splunk}
-      ],
-      do: logger
-
-config :logger, backends: logger_backends
-
 case Integer.parse(System.get_env("LISTEN_PORT", "")) do
   {listen_port, ""} ->
     config :trike, :listen_port, listen_port

@@ -5,4 +5,4 @@ config :trike,
   listen_port: 0,
   clock: Fakes.FakeDateTime
 
-config :logger, :console, level: :warn
+config :logger, :console, level: :warning
