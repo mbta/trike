@@ -12,6 +12,10 @@ config :ex_aws,
   http_client: ExAws.Request.Req,
   json_codec: Jason
 
+config :logger, :default_formatter,
+  format: "$dateT$time $metadata[$level] $message\n",
+  metadata: [:pid, :socket, :request_id]
+
 config :trike,
   listen_port: 8001,
   kinesis_client: Fakes.FakeKinesisClient,
