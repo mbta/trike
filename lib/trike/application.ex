@@ -12,6 +12,18 @@ defmodule Trike.Application do
     kinesis_client = Application.get_env(:trike, :kinesis_client)
     kinesis_stream = Application.get_env(:trike, :kinesis_stream)
 
+    splunk_token = System.get_env("TRIKE_SPLUNK_TOKEN", "")
+    sentry_env = System.get_env("SENTRY_ENV", "")
+    sentry_dsn = System.get_env("SENTRY_DSN", "")
+
+    if sentry_dsn != "" and sentry_env != "" do
+      LoggerBackends.add(Sentry.LoggerBackend)
+    end
+
+    if Application.get_env(:trike, :is_prod?) and splunk_token != "" do
+      LoggerBackends.add(Logger.Backend.Splunk)
+    end
+
     Logger.info(
       "Starting Trike on port #{inspect(listen_port)} proxying to #{kinesis_stream} (#{inspect(kinesis_client)})"
     )

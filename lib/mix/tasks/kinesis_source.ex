@@ -28,7 +28,7 @@ defmodule Mix.Tasks.KinesisSource do
       if opts[:host] do
         String.to_charlist(opts[:host])
       else
-        '127.0.0.1'
+        ~c"127.0.0.1"
       end
 
     port = opts[:port] || 8001

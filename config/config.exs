@@ -12,12 +12,17 @@ config :ex_aws,
   http_client: ExAws.Request.Req,
   json_codec: Jason
 
+config :logger, :default_formatter,
+  format: "$dateT$time $metadata[$level] $message\n",
+  metadata: [:pid, :socket, :request_id]
+
 config :trike,
   listen_port: 8001,
   kinesis_client: Fakes.FakeKinesisClient,
   clock: DateTime,
   stale_timeout_ms: 5 * 60 * 1_000,
   health_check_interval_ms: 60 * 1_000,
-  heartbeat_packet: "HEARTBEAT"
+  heartbeat_packet: "HEARTBEAT",
+  is_prod?: false
 
 import_config "#{config_env()}.exs"

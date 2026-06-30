@@ -34,7 +34,7 @@ defmodule Trike.HealthChecker do
       Process.send_after(self(), :check_health, @health_check_interval_ms)
       {:ok, state}
     else
-      Logger.warn("missing state arg in health_checker")
+      Logger.warning("missing state arg in health_checker")
       {:stop, :missing_arg}
     end
   end

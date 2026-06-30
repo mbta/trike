@@ -23,7 +23,7 @@ defmodule HealthCheckerTest do
         HealthChecker.log_ranch_info(ranch_ref)
       end)
 
-    assert health_check_log =~ "ranch_info=%{active_connections: "
+    assert health_check_log =~ "ranch_info=%{pid: "
     assert health_check_log =~ "Proxy proxy_pid=#PID<"
     assert health_check_log =~ ~s[conn="{127.0.0.1:8002 -> ]
     assert health_check_log =~ "mailbox_size="

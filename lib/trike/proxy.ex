@@ -20,8 +20,8 @@ defmodule Trike.Proxy do
           last_sequence_number: String.t() | nil,
           stale_timeout_ms: non_neg_integer(),
           stale_timeout_ref: reference() | nil,
-          put_record_fn:
-            (Kinesis.stream_name(), binary(), binary() -> {:ok, term()} | {:error, term()}),
+          put_record_fn: (Kinesis.stream_name(), binary(), binary() ->
+                            {:ok, term()} | {:error, term()}),
           clock: module(),
           ranch: module()
         }
