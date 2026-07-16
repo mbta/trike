@@ -1,15 +1,17 @@
 name: Elixir CI
 
-on: 
+on:
   push:
   pull_request:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: "0 5 * * *"
+
+permissions:
+  contents: read # Needed to check out code
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-
 
 jobs:
   asdf:
@@ -17,16 +19,18 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          persist-credentials: false
       # cache the ASDF directory, using the values from .tool-versions
       - name: ASDF cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.asdf
           key: ${{ runner.os }}-asdf-v4-${{ hashFiles('.tool-versions') }}
         id: asdf-cache
       # only run `asdf install` if we didn't hit the cache
-      - uses: asdf-vm/actions/install@v4
+      - uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
         if: steps.asdf-cache.outputs.cache-hit != 'true'
 
   build:
@@ -34,20 +38,22 @@ jobs:
     runs-on: ubuntu-24.04
     needs: asdf
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          persist-credentials: false
       - name: ASDF cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.asdf
           key: ${{ runner.os }}-asdf-v4-${{ hashFiles('.tool-versions') }}
         id: asdf-cache
-      - uses: mbta/actions/reshim-asdf@v1
+      - uses: mbta/actions/reshim-asdf@af587ca71a208f34ae1271bd16a7bc98b4adfbcb # v1.24
       # The asdf job should have prepared the cache. exit if it didn't for some reason
       - run: exit 1
         if: steps.asdf-cache.outputs.cache-hit != 'true'
       - name: Restore dependencies cache
         id: deps-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: deps
           key: ${{ runner.os }}-mix-v4-${{ hashFiles('**/mix.lock') }}
@@ -67,12 +73,15 @@ jobs:
         run: mix test --cover
       - name: Save PR information
         run: |
-          echo "${{ github.event.pull_request.number }}" > cover/PR_NUMBER
-          echo "${{ github.event.pull_request.head.sha }}" > cover/PR_SHA
+          echo "${PR_NUMBER}" > cover/PR_NUMBER
+          echo "${PR_SHA}" > cover/PR_SHA
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
         if: github.event.pull_request
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: elixir-lcov
           path: cover/
-      - uses: mbta/actions/dialyzer@v2
+      - uses: mbta/actions/dialyzer@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
