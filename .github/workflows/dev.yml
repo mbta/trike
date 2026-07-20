@@ -7,13 +7,19 @@ on:
   schedule:
     - cron: "0 5 * * *"
 
+permissions:
+  contents: read # Needed to check out code
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
+      id-token: write # Needed to communicate with AWS
     environment: dev-linux
     concurrency: dev-linux
     env:
@@ -21,21 +27,23 @@ jobs:
       ECS_SERVICE: trike-dev
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: mbta/actions/build-push-ecr@v2
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        with:
+          persist-credentials: false
+      - uses: mbta/actions/build-push-ecr@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
         id: build-push
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           docker-repo: ${{ secrets.DOCKER_REPO }}
           docker-additional-tags: dev
-      - uses: mbta/actions/deploy-ecs@v2
+      - uses: mbta/actions/deploy-ecs@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           ecs-cluster: ${{ env.ECS_CLUSTER }}
           ecs-service: ${{ env.ECS_SERVICE }}
           docker-tag: ${{ steps.build-push.outputs.docker-tag }}
           launch-type: EXTERNAL
-      - uses: mbta/actions/notify-slack-deploy@v1
+      - uses: mbta/actions/notify-slack-deploy@af587ca71a208f34ae1271bd16a7bc98b4adfbcb # v1.24
         if: ${{ !cancelled() }}
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK }}
