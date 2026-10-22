@@ -41,14 +41,14 @@ defmodule Trike.MixProject do
       {:ehmon, git: "https://github.com/mbta/ehmon.git"},
       {:jason, "~> 1.4"},
       {:tzdata, "~> 1.1"},
-      {:ex_aws, "~> 2.4"},
+      {:ex_aws, "~> 2.7"},
       {:ex_aws_kinesis, "~> 2.0"},
-      {:configparser_ex, "~> 4.0", only: [:prod]},
-      {:req, "~> 0.7"},
+      {:configparser_ex, "~> 5.0", only: [:prod]},
       {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
       {:lcov_ex, "~> 0.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:sentry, "~> 14.0"},
+      {:finch, "~> 0.24"},
       {:logger_backends, "~> 1.0"}
     ]
   end
