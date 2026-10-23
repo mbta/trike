@@ -44,6 +44,7 @@ defmodule Trike.MixProject do
       {:ex_aws, "~> 2.7"},
       {:ex_aws_kinesis, "~> 2.0"},
       {:configparser_ex, "~> 5.0", only: [:prod]},
+      {:req, "~> 0.7"},
       {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
       {:lcov_ex, "~> 0.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
